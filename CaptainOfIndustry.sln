@@ -8,10 +8,13 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2299B737-41E1-4AC3-841A-900436EC396B}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.gitignore = .gitignore
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TerrainTower", "TerrainTower\TerrainTower.csproj", "{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "COI_Questing", "COI_Questing\COI_Questing.csproj", "{010D196C-8F1C-4EB7-9899-D4125A402276}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +30,10 @@ Global
 		{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}.Release|Any CPU.Build.0 = Release|Any CPU
+		{010D196C-8F1C-4EB7-9899-D4125A402276}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{010D196C-8F1C-4EB7-9899-D4125A402276}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{010D196C-8F1C-4EB7-9899-D4125A402276}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{010D196C-8F1C-4EB7-9899-D4125A402276}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
