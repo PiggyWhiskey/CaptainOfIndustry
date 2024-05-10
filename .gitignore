@@ -10,6 +10,7 @@ packages
 .gitignore
 .editorconfig
 .gitattributes
+test.txt
 
 # User-specific files
 *.rsuser
@@ -371,3 +372,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /TerrainTower/GUI Images/Mine Control Tower GUI.jpg
 /TerrainTower/GUI Images/Mine Control Tower GUI.jpg
+/.gitignore
