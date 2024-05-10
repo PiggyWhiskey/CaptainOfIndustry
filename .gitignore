@@ -7,6 +7,9 @@
 # Local only
 TerrainTower/GUI Images/
 packages
+.gitignore
+.editorconfig
+.gitattributes
 
 # User-specific files
 *.rsuser
