@@ -1,0 +1,40 @@
+﻿// Decompiled with JetBrains decompiler
+// Type: Mafi.Serialization.CorruptedSaveException
+// Assembly: Mafi, Version=0.6.3.0, Culture=neutral, PublicKeyToken=null
+// MVID: B4163D2E-70BA-4761-B75B-031A8F4CC526
+// Assembly location: D:\GameLibrary\SteamLibrary\steamapps\common\Captain of Industry\Captain of Industry_Data\Managed\Mafi.dll
+// XML documentation location: D:\GameLibrary\SteamLibrary\steamapps\common\Captain of Industry\Captain of Industry_Data\Managed\Mafi.xml
+
+using eLxG93FZl5M3yHxFGb;
+using Mafi.Localization;
+using System;
+
+#nullable disable
+namespace Mafi.Serialization
+{
+  public class CorruptedSaveException : Exception
+  {
+    public readonly LocStrFormatted? MessageForPlayer;
+    public readonly bool DoNotOfferBugReport;
+
+    public CorruptedSaveException(string debugMessage, Exception innerException = null)
+    {
+      MBiHIp97M4MqqbtZOh.RFLpSOptx();
+      // ISSUE: explicit constructor call
+      base.\u002Ector(debugMessage, innerException);
+    }
+
+    public CorruptedSaveException(
+      LocStrFormatted messageForPlayer,
+      string debugMessage,
+      bool doNotOfferBugReport = false,
+      Exception innerException = null)
+    {
+      MBiHIp97M4MqqbtZOh.RFLpSOptx();
+      // ISSUE: explicit constructor call
+      base.\u002Ector(debugMessage, innerException);
+      this.MessageForPlayer = new LocStrFormatted?(messageForPlayer);
+      this.DoNotOfferBugReport = doNotOfferBugReport;
+    }
+  }
+}

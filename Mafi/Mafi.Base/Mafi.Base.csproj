@@ -1,0 +1,320 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--Project was exported from assembly: D:\GameLibrary\SteamLibrary\steamapps\common\Captain of Industry\Captain of Industry_Data\Managed\Mafi.Base.dll-->
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{89F8BAEA-3925-4786-B5A9-CDB95EED8BCB}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Mafi.Base</AssemblyName>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <ApplicationVersion>0.6.3.0</ApplicationVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Mafi">
+      <HintPath>lib\Mafi.dll</HintPath>
+    </Reference>
+    <Reference Include="Mafi.Core">
+      <HintPath>lib\Mafi.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="_003CModule_003E.cs" />
+    <Compile Include="_003CModule_003E{EBE89BB0-DF98-4112-B11E-2D3687F97.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RefSafetyRulesAttribute.cs" />
+    <Compile Include="Mafi\Base\Assets.cs" />
+    <Compile Include="Mafi\Base\BaseMod.cs" />
+    <Compile Include="Mafi\Base\BaseModConfig.cs" />
+    <Compile Include="Mafi\Base\TerrainGenerator.cs" />
+    <Compile Include="Mafi\Base\BuildInfo.cs" />
+    <Compile Include="Mafi\Base\IconsPaths.cs" />
+    <Compile Include="Mafi\Base\Ids.cs" />
+    <Compile Include="Mafi\Base\CountableProductAttribute.cs" />
+    <Compile Include="Mafi\Base\LooseProductAttribute.cs" />
+    <Compile Include="Mafi\Base\MoltenProductAttribute.cs" />
+    <Compile Include="Mafi\Base\FluidProductAttribute.cs" />
+    <Compile Include="Mafi\Base\VirtualProductAttribute.cs" />
+    <Compile Include="Mafi\Base\IResearchNodesData.cs" />
+    <Compile Include="Mafi\Base\Costs.cs" />
+    <Compile Include="Mafi\Base\EntityCostsBuilderExtensions.cs" />
+    <Compile Include="Mafi\Base\StartingFactoryBuilder.cs" />
+    <Compile Include="Mafi\Base\StartingFactoryPlacer.cs" />
+    <Compile Include="Mafi\Base\StartingFactoryPlan.cs" />
+    <Compile Include="Mafi\Base\IStartingFactoryConfig.cs" />
+    <Compile Include="Mafi\Base\StartingFactoryBuilderException.cs" />
+    <Compile Include="Mafi\Base\StartingFactoryConfig.cs" />
+    <Compile Include="Mafi\Base\Tags.cs" />
+    <Compile Include="Mafi\Base\Temporary\CraterStaticIslandMap.cs" />
+    <Compile Include="Mafi\Base\Terrain\FlowersOnTerrainConfig.cs" />
+    <Compile Include="Mafi\Base\Terrain\FlowersTerrainPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\GrassOnRocksTerrainPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\MixedGrassTerrainPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\SmoothTerrainPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\StartingLocationV2.cs" />
+    <Compile Include="Mafi\Base\Terrain\TerrainTexturedPorpsTerrainPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\CellSurfacesData.cs" />
+    <Compile Include="Mafi\Base\Terrain\TerrainDetailsData.cs" />
+    <Compile Include="Mafi\Base\Terrain\TerrainFeaturesTooltips.cs" />
+    <Compile Include="Mafi\Base\Terrain\TerrainGenPriority.cs" />
+    <Compile Include="Mafi\Base\Terrain\TerrainMaterialsData.cs" />
+    <Compile Include="Mafi\Base\Terrain\TerrainTileSurfaceDecalsData.cs" />
+    <Compile Include="Mafi\Base\Terrain\TerrainTileSurfacesData.cs" />
+    <Compile Include="Mafi\Base\Terrain\Previews\HeightmapFeaturePreviewChunkData.cs" />
+    <Compile Include="Mafi\Base\Terrain\Previews\HeightmapTopBottomPreviewChunkData.cs" />
+    <Compile Include="Mafi\Base\Terrain\Previews\PointFeaturePreviewChunkData.cs" />
+    <Compile Include="Mafi\Base\Terrain\Previews\PreviewHelper`1.cs" />
+    <Compile Include="Mafi\Base\Terrain\Maps\AlphaStaticIslandMap.cs" />
+    <Compile Include="Mafi\Base\Terrain\Maps\BeachStaticIslandMap.cs" />
+    <Compile Include="Mafi\Base\Terrain\Maps\CurlandMap.cs" />
+    <Compile Include="Mafi\Base\Terrain\Maps\GoldenPeakStaticIslandMap.cs" />
+    <Compile Include="Mafi\Base\Terrain\Maps\InsulaMortis.cs" />
+    <Compile Include="Mafi\Base\Terrain\Maps\StaticIslandMapsRegistry.cs" />
+    <Compile Include="Mafi\Base\Terrain\Maps\StaticIslandMap.cs" />
+    <Compile Include="Mafi\Base\Terrain\Maps\YouShallNotPassStaticIslandMap.cs" />
+    <Compile Include="Mafi\Base\Terrain\FeatureGenerators\ExplicitOceanFloorRegion.cs" />
+    <Compile Include="Mafi\Base\Terrain\FeatureGenerators\OceanFloorFeatureGenerator.cs" />
+    <Compile Include="Mafi\Base\Terrain\FeatureGenerators\PolygonSurfaceFeatureGenerator.cs" />
+    <Compile Include="Mafi\Base\Terrain\FeatureGenerators\PolygonTerrainFeatureGenerator.cs" />
+    <Compile Include="Mafi\Base\Terrain\FeatureGenerators\PolygonTerrainReplaceGenerator.cs" />
+    <Compile Include="Mafi\Base\Terrain\FeatureGenerators\SetHeightInAreaGenerator.cs" />
+    <Compile Include="Mafi\Base\Terrain\FeatureGenerators\ThrowExceptionTerrainFeature.cs" />
+    <Compile Include="Mafi\Base\Terrain\FeatureGenerators\VirtualResourceFeatureGenerator.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\CustomPropsPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\CustomTreesPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\FlowersPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\ForestFloorPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\GrassOnRocksPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\MixedSurfaceMaterialsPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\ParticleErosionPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\PolygonFlattenPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\PolygonRampPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\PolygonReplaceMaterialPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\PolygonRestrictPlacementPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\PolygonSmoothPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\PolygonTreeGeneratorPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\SuppressErosionRegion.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\TerrainChunk64BitMap.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\TerrainPropsPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\TerrainUnderPropsPostProcessor.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\TreeWithWeight.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\GeneratedPropsData.cs" />
+    <Compile Include="Mafi\Base\Terrain\PostProcessors\GeneratedTreesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\PopNeedDiseaseTrigger.cs" />
+    <Compile Include="Mafi\Base\Prototypes\TrashDiseaseTrigger.cs" />
+    <Compile Include="Mafi\Base\Prototypes\DiseasesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\PopNeedDiseaseProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\TrashDiseaseProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\EdictsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\EdictRenameUtil.cs" />
+    <Compile Include="Mafi\Base\Prototypes\FoodData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\PropertiesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\TerrainPropsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\ToolbarCategoriesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\TreesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Vehicles\ExcavatorsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Vehicles\TreeHarvestersData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Vehicles\TreePlanetersData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Vehicles\TrucksData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Transport\PortShapesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Transport\StackerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Transport\TransportsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Storages\StoragesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Settlements\SettlementDecorationsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Settlements\SettlementsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Rockets\RocketsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\ConstructionResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\FarmingResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\IntelligenceResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\LogisticsResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\MiningAndSmeltingResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\PowerPlantResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\RefineryResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\ResearchExtensions.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\ResearchNodesPositionSetup.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\ShipResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\SpaceResearchData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Research\TechnologyData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Fleet\FleetData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Cargo\CargoDepotsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Cargo\CargoShipsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Messages\GoalToConstructVehicle.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Messages\WarningMessagesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Messages\ChatMessagesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Messages\GoalsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Messages\Extensions.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Messages\MessageGroupsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Messages\MessagesExtensions.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Messages\TutorialMessagesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\OceanLiquidDump.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\OceanWaterPump.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\SolarElectricityGenerator.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\AirSeparatorData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\AllMachinesRegistrator.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\AnaerobicDigesterData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\AnimalFarmsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\AssemblyData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\BakingUnitData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\BasicDieselDistillerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\BoilersData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\BricksMakerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\BurnerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\CharcoalMakerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\ChemicalPlantData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\CompactorData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\ConcreteMixerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\CoolingTowerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\CopperElectrolysisData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\CrackingUnitData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\CropsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\CrusherData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\DataCenterData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\DieselGeneratorsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\DrugMakerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\ElectrolyzerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\EvaporationPondData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\ExhaustScrubberData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\FarmsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\FermentationTankData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\FlareData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\FoodMillData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\FoodProcessorData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\FurnacesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\GeneralMixerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\GlassMakerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\GoldFurnaceData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\HydrogenReformerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\IncinerationPlantData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\MetalCastersData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\MicrochipMakerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\NuclearReprocessingPlantData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\OilDistillationData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\OxygenFurnaceData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PolymerizationPlantData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGeneratorsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\RotaryKilnData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\SettlingTankData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\ShredderData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\SiliconCrystallizerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\SiliconReactorData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\ExhaustExtensions.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\SmokeStackData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\SolarPanelsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\SolarElectricityGeneratorProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\SourWaterStripperData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\TurbinesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\UraniumEnrichmentPlant.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\VacuumDistillationTowerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\VehicleRampsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\WasteDumpsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\OceanLiquidDumpProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\WaterChillerData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\WaterDesalinationPlantData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\WaterPumpsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\OceanWaterPumpProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\WaterTreatmentData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\WellPumpsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\ComputingEntities\Mainframe.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\ComputingEntities\MainframeProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\ElectricityGeneratorFromMechPower.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\ElectricityGeneratorFromProduct.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\FlyWheelEntity.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\MechPowerGeneratorFromProduct.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\ToggleMechGeneratorAutoBalanceCmd.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\ElectricityGeneratorFromMechPowerResolver.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\ElectricityGeneratorFromMechPowerProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\ElectricityGeneratorFromProductPortProductResolver.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\ElectricityGeneratorFromProductProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\FlyWheelPortResolver.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\FlyWheelEntityProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\MechGeneratorAutoBalanceCommandProcessor.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\MechPowerGeneratorFromProductResolver.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\MechPowerGeneratorFromProductConfigExtensions.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Machines\PowerGenerators\MechPowerGeneratorFromProductProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Weather\DefaultWeatherProvider.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Weather\WeatherData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\World\CargoShipQuickTradeHandler.cs" />
+    <Compile Include="Mafi\Base\Prototypes\World\StaticWorldMap.cs" />
+    <Compile Include="Mafi\Base\Prototypes\World\LocationExtensions.cs" />
+    <Compile Include="Mafi\Base\Prototypes\World\WorldMapEntitiesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\World\WorldMapIslands.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\BarrierEntity.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\RetainingWallEntity.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\Statue.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\StatueOfMaintenanceManager.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\TombOfCaptains.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\UniversalProductsSink.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\UniversalProductsSource.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\BarriersData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\BarrierProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\BeaconsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\CaptainOfficesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\DebugBuildingsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ForestryBuildingsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\FuelStationsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\MaintenanceDepotsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\MineBuildingsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\NuclearReactorsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\OreSortingPlantData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\RainwaterHarvesterData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ResearchLabsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\RetainingWallsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\RetainingWallProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\RocketAssemblyDepotData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\RocketLaunchPadData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\RuinsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ShipyardData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ShipsAnimationData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\StatuesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\StatueProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStoragesData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\TombOfCaptainsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\TombOfCaptainsProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\TradeDockData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\UniversalProductsSinkProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\UniversalProductsSourceProto.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\VehicleDepotsData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\WasteSortingPlantData.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\ThermalStorage.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\ThermalStorageSetProductCmd.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\ThermalStorageCommandsProcessor.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\ThermalStoragePortProductResolver.cs" />
+    <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\ThermalStorageProto.cs" />
+    <Compile Include="Mafi\Base\Ai\ScriptedAiStage.cs" />
+    <Compile Include="Mafi\Base\Ai\ScriptedAiActionsGenerator.cs" />
+    <Compile Include="Mafi\Base\Ai\ScriptedAiConfigs.cs" />
+    <Compile Include="FZSxiJ5ZBJmwSxbEqP\geUwbRLwd0WNm7K3QP.cs" />
+    <Compile Include="CociHuaT4WLV2kj8CU\EwV3ECxYhIse1SOarW.cs" />
+    <Compile Include="eLxG93FZl5M3yHxFGb\MBiHIp97M4MqqbtZOh.cs" />
+    <Compile Include="jOgQY3RGtH5fd9qQao\OBqe2IUAeSpOmlOQ4O.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="aR3nbf8dQp2feLmk31\lSfgApatkdxsVcGcrktoFd.resx" />
+    <EmbeddedResource Include="X9QOdhMxcLpPO7IeSX.4RL2YlJy5o4fXFIHVx" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

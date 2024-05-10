@@ -1,0 +1,22 @@
+﻿// Decompiled with JetBrains decompiler
+// Type: Mafi.Core.Vehicles.Jobs.IJobWithPreNavigation
+// Assembly: Mafi.Core, Version=0.6.3.0, Culture=neutral, PublicKeyToken=null
+// MVID: 2D94E377-7747-46A4-A766-4DF7ABFEBD30
+// Assembly location: D:\GameLibrary\SteamLibrary\steamapps\common\Captain of Industry\Captain of Industry_Data\Managed\Mafi.Core.dll
+// XML documentation location: D:\GameLibrary\SteamLibrary\steamapps\common\Captain of Industry\Captain of Industry_Data\Managed\Mafi.Core.xml
+
+using Mafi.Localization;
+
+#nullable disable
+namespace Mafi.Core.Vehicles.Jobs
+{
+  /// <summary>
+  /// Allows <see cref="T:Mafi.Core.Vehicles.Jobs.ChainedNavigationJob" /> to pre-path a job that implements this.
+  /// </summary>
+  public interface IJobWithPreNavigation
+  {
+    LocStrFormatted GoalName { get; }
+
+    RobustNavHelper StartNavigation();
+  }
+}
