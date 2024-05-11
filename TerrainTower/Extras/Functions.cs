@@ -131,7 +131,7 @@ namespace TerrainTower.Extras
                     bestDesignation = desig;
                 }
             }
-#if DEBUG
+#if DEBUG2
             Logger.InfoDebug("FindDesignation: State {0}, bestScore {1}", config.ToStringSafe(), bestScore);
 #endif
             return bestDesignation != null;

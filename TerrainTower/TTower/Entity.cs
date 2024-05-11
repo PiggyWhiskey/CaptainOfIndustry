@@ -21,6 +21,7 @@ using Mafi.Core.Prototypes;
 using Mafi.Core.Simulation;
 using Mafi.Core.Terrain;
 using Mafi.Core.Terrain.Designation;
+using Mafi.Core.Terrain.Props;
 using Mafi.Core.Utils;
 using Mafi.Serialization;
 
@@ -97,23 +98,6 @@ namespace TerrainTower.TTower
                 writer.EnqueueDataSerialization(value, s_serializeDataDelayedAction);
             }
         }
-
-        /*
-         * Calendar
-         *
-         * ElectricityConsumer
-         * Maintenance
-         * Unity
-         *
-         * ProductsData
-         * ProductsManager
-         *
-         * Proto
-         *
-         * tmpBuffersFull
-         *
-         *
-        */
 
         protected override void DeserializeData(BlobReader reader)
         {
@@ -204,7 +188,6 @@ namespace TerrainTower.TTower
 
             //Set available Output Ports
             m_outputsNames = Ports.Where(x => x.Type == IoPortType.Output).Select(x => x.Name).OrderBy(x => x).Prepend('-').ToImmutableArray();
-
         }
 
         /// <summary>
@@ -237,7 +220,6 @@ namespace TerrainTower.TTower
             initData();
 
             //Mimic Machine Entity
-            //TODO: Validate Unity Consumtion is functioning
             if (IsBoostRequested)
             {
                 UnityConsumer valueOrNull = UnityConsumer.ValueOrNull;
@@ -252,8 +234,7 @@ namespace TerrainTower.TTower
 
         #region _QUICK REMOVE
 
-        //TerrainTowerProductData
-        //GlobalOutputBuffer
+        //TODO: Add quick remove functionality to view
         public bool QuickRemoveProduct(ProductQuantity productQuantity)
         {
             if (!GetQuickRemoveCost(out Upoints unity, productQuantity.Quantity) || unity.IsNotPositive) return false;
@@ -565,13 +546,14 @@ namespace TerrainTower.TTower
             }
         }
 
+        /// <summary>
+        /// Gets all Products from <see cref="m_productsData"/> for a particular port
+        /// - Used within <see cref="TerrainTowerPortProductResolver"/>
+        /// </summary>
+        /// <param name="port"></param>
+        /// <returns>List of Products for an Output Port</returns>
         public ImmutableArray<ProductProto> GetPortProducts(IoPort port)
         {
-            Logger.InfoDebug("GetPortProducts: Port: {0} {1}", port.Name, port.Id);
-            foreach (KeyValuePair<ProductProto, TerrainTowerProductData> prod in m_productsData)
-            {
-                Logger.InfoDebug("GetPortProducts: Product: {0} {1}", prod.Key, prod.Value.OutputPort);
-            }
             return m_productsData.Values.Where(x => x.OutputPort == port.Name).Select(x => x.Buffer.Product).ToImmutableArray();
         }
 
@@ -957,11 +939,48 @@ namespace TerrainTower.TTower
         /// <param name="targetHeight">Height to check for</param>
         private void clearCustomSurface(Tile2iAndIndex tileAndIndex, HeightTilesF targetHeight)
         {
-            if (ContextTerrainManager.TryGetTileSurface(tileAndIndex.Index, out TileSurfaceData tileSurfaceData)
-                && !tileSurfaceData.IsAutoPlaced
-                && tileSurfaceData.Height > targetHeight)
+            if (ContextTerrainManager.TryGetTileSurface(tileAndIndex.Index, out TileSurfaceData tileSurfaceData))
             {
-                ContextTerrainManager.ClearCustomSurface(tileAndIndex);
+                if (!tileSurfaceData.IsAutoPlaced && tileSurfaceData.Height > targetHeight)
+                {
+                    ContextTerrainManager.ClearCustomSurface(tileAndIndex);
+                }
+            }
+        }
+
+        //TODO: Test if working
+        /// <summary>
+        /// Remove props from a tile (Bushes etc)
+        /// - Taken from MiningJob.handleMining()
+        /// </summary>
+        /// <param name="tile">Tile2i of location</param>
+        private void clearProps(Tile2i tile)
+        {
+#if DEBUG
+            //m_designationManager.TerrainPropsManager.ContainsPropInDesignation(designation)
+            Logger.InfoDebug("clearProps: {0}", tile);
+#endif
+            TerrainPropsManager tpm = m_designationManager.TerrainPropsManager;
+            if (tpm.TerrainTileToProp.TryGetValue(tile.AsSlim, out TerrainPropId key))
+            {
+                if (!tpm.TerrainProps.TryGetValue(key, out TerrainPropData propData))
+                {
+                    Logger.Warning("clearProps: PropData not found for {0}", key);
+                }
+                else if (!tpm.TryRemovePropAtTile(tile, false))
+                {
+                    Logger.Warning("clearProps: Failed to remove prop {0}", key);
+                }
+                else
+                {
+                    if (propData.Proto.ProductWhenHarvested.IsNotEmpty)
+                    {
+                        //Send Prop product to shipyard
+                        ProductQuantity pq = propData.Proto.ProductWhenHarvested.ScaledBy(propData.Scale);
+                        m_productsManager.ProductCreated(pq.Product, pq.Quantity, CreateReason.MinedFromTerrain);
+                        Context.AssetTransactionManager.StoreClearedProduct(pq);
+                    }
+                }
             }
         }
 
@@ -1250,6 +1269,10 @@ namespace TerrainTower.TTower
             }
         }
 
+        /// <summary>
+        /// Get the current State of the Tower based on current conditions
+        /// </summary>
+        /// <returns><see cref="State"/> to be assigned to <see cref="CurrentState"/></returns>
         private State simStepUpdateState()
         {
             //Not Enabled = No SimUpdate
@@ -1485,9 +1508,9 @@ namespace TerrainTower.TTower
 
             bool hasMined = false;
 
-            for (int i = 0; i <= 4; i++)
+            for (int i = 0; i <= designation.SizeTiles; i++)
             {
-                for (int j = 0; j <= 4; j++)
+                for (int j = 0; j <= designation.SizeTiles; j++)
                 {
                     Tile2i tile = designation.Data.OriginTile + new RelTile2i(j, i);
 
@@ -1501,11 +1524,14 @@ namespace TerrainTower.TTower
                     HeightTilesF terrainHeight = ContextTerrainManager.GetHeight(tile);
                     Tile2iAndIndex tileAndIndex = tile.ExtendIndex(ContextTerrainManager);
 
+                    //Clear Custom Surface if it exists and is above target terrainHeight
+                    //Process before terrain Height Check to allow clearing of Props
+                    //Uncleared Props flag designation as Unfulfilled
+                    clearCustomSurface(tileAndIndex, targetHeight);
+                    clearProps(tile);
+
                     // Terrain is already at or below target terrainHeight, skip loop
                     if (terrainHeight <= targetHeight) { continue; }
-
-                    //Clear Custom Surface if it exists and is above target terrainHeight
-                    clearCustomSurface(tileAndIndex, targetHeight);
 
                     hasMined |= tryMineDesignation_MineLayer(tileAndIndex, targetHeight, ref maxMineQuantity, true);
                     hasMined |= tryMineDesignation_MineLayer(tileAndIndex, targetHeight, ref maxMineQuantity, false);
