@@ -11,6 +11,9 @@
     <CopyOutputFiles>true</CopyOutputFiles>
     <OutputPath>$(OutputPath)</OutputPath>
     <OutputPath>$(OutputPath)\..\AnotherLocation</OutputPath>
+    <Title>$(AssemblyName)</Title>
+    <PackageProjectUrl>https://github.com/PiggyWhiskey/CaptainOfIndustry</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

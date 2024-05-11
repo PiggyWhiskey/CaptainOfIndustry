@@ -1106,6 +1106,7 @@ namespace TerrainTower.TTower
                     {
                         productData.SortedQuantity -= quantity;
                         productData.SortedThisMonth += quantity;
+                        m_productsManager.ProductCreated(productData.Buffer.Product, quantity, CreateReason.MinedFromTerrain);
                     }
                     sortedQuantity = productData.SortedQuantity;
                     if (sortedQuantity.IsPositive)
