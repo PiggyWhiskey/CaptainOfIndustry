@@ -1,8 +1,10 @@
-﻿using Mafi.Base;
+﻿using Mafi;
+using Mafi.Base;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Mods;
 using Mafi.Core.Notifications;
 using Mafi.Core.Prototypes;
+using Mafi.Core.Research;
 
 using TerrainTower.TTower;
 
@@ -45,7 +47,13 @@ namespace TerrainTower
     {
         public void RegisterData(ProtoRegistrator registrator)
         {
-
+            _ = registrator.ResearchNodeProtoBuilder
+                .Start("Massive Storage Containers", Extras.CustomIds.Research.TerrainTowerResearchId)
+                .Description("Terrain Tower Research")
+                .AddLayoutEntityToUnlock(Extras.CustomIds.Prototypes.TerrainTowerProtoId)
+                .SetGridPosition(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.IronSmeltingScrap).GridPosition + new Vector2i(0, -4))
+                .SetCosts(new ResearchCostsTpl(TerrainTowerProto.RESEARCH_DIFFICULTY))
+                .BuildAndAdd();
         }
     }
 

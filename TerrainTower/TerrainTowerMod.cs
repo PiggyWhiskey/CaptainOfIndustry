@@ -44,8 +44,7 @@ namespace TerrainTower
             //Build Prototypes
             registrator.RegisterData<PrototypeRegistrator>();
             registrator.RegisterData<NotificationRegistrator>();
-            //TODO: Build RegisterData functions for Research and Notifications
-
+            registrator.RegisterData<ResearchRegistrator>();
         }
     }
 }

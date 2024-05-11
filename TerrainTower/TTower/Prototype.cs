@@ -23,17 +23,19 @@ namespace TerrainTower.TTower
         public static readonly Duration SORT_DURATION;
         public static readonly Quantity SORT_QUANTITY_PER_DURATION;
         public static readonly Duration TERRAIN_DURATION;
-
+        public static readonly int RESEARCH_DIFFICULTY;
         static TerrainTowerProto()
         {
 #if DEBUG
             BOOST_COST = 1.0.Upoints();
             ELECTRICITY_COST = 0.Kw();
             ENTITY_COSTS = new EntityCostsTpl.Builder().CP(1);
+            RESEARCH_DIFFICULTY = 1;
 #else
             BOOST_COST = 5.0.Upoints();
             ELECTRICITY_COST = 400.Kw();
             ENTITY_COSTS = new EntityCostsTpl.Builder().CP(10).MaintenanceT1(20).Workers(10);
+            RESEARCH_DIFFICULTY = 20;
 #endif
 
             BUFFER_CAPACITY = 1000.Quantity();
