@@ -21,7 +21,7 @@ namespace TerrainTower.TTower
         private readonly Harmony m_harmony;
         private static TerrainTowersManager m_towerManager;
 
-        internal ModPatches(TerrainTowersManager UTowerManager)
+        ModPatches(TerrainTowersManager UTowerManager)
         {
             m_harmony = new Harmony("myPatch");
             m_harmony.PatchAll();
@@ -29,10 +29,10 @@ namespace TerrainTower.TTower
             m_towerManager = UTowerManager;
         }
 
-        private static int m_cnt = 0;
+        static int m_cnt = 0;
         [HarmonyPostfix]
         [HarmonyPatch(typeof(TowerAreasRenderer), "rendererLoadState")]
-        private static void Postfix(TowerAreasRenderer __instance)
+        static void Postfix(TowerAreasRenderer __instance)
         {
             Logger.Info($"{m_cnt++} TowerAreasRender rendererLoadState");
             IndexableEnumerator<TerrainTowerEntity> enumerator = m_towerManager.AllTowers.GetEnumerator();
@@ -40,7 +40,7 @@ namespace TerrainTower.TTower
             {
                 Logger.Info($"Adding UTower");
                 IAreaManagingTower current = enumerator.Current;
-                _ = typeof(TowerAreasRenderer).GetMethod("addTowerOrUpdateArea", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, new object[] { current });
+                typeof(TowerAreasRenderer).GetMethod("addTowerOrUpdateArea", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(__instance, (new object[] { current }));
             }
 
             FieldInfo fo = typeof(TowerAreasRenderer).GetField("m_delayedProcessing", BindingFlags.NonPublic | BindingFlags.Instance);

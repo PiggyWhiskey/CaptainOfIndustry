@@ -212,7 +212,6 @@ namespace TerrainTower.TTower
     {
         private static readonly Action<object, BlobReader> s_deserializeDataDelayedAction;
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction;
-        private readonly Lyst<TerrainTowerEntity> m_allTowers;
         private readonly IEntitiesManager m_entitiesManager;
         private readonly ProtosDb m_protosDb;
         private readonly Lyst<TerrainTowerEntity> m_terrainTowers;
@@ -230,27 +229,28 @@ namespace TerrainTower.TTower
         {
             m_protosDb = protosDb;
             m_entitiesManager = entitiesManager;
-            m_allTowers = new Lyst<TerrainTowerEntity>();
             m_terrainTowers = new Lyst<TerrainTowerEntity>();
-            OnAreaChange = new Event<TerrainTowerEntity, RectangleTerrainArea2i>();
-            OnTTAdded = new Event<TerrainTowerEntity, EntityAddReason>();
-            OnTTRemoved = new Event<TerrainTowerEntity, EntityRemoveReason>();
+            m_onAreaChange = new Event<TerrainTowerEntity, RectangleTerrainArea2i>();
+            m_onTTAdded = new Event<TerrainTowerEntity, EntityAddReason>();
+            m_onTTRemoved = new Event<TerrainTowerEntity, EntityRemoveReason>();
             entitiesManager.EntityAddedFull.Add(this, entityAdded);
             entitiesManager.EntityRemovedFull.Add(this, entityRemoved);
             constructionManager.EntityConstructed.Add(this, new Action<IStaticEntity>(onEntityConstructed));
             constructionManager.EntityStartedDeconstruction.Add(this, new Action<IStaticEntity>(onEntityDesconstructionStarted));
         }
 
-        public IIndexable<TerrainTowerEntity> AllTowers => m_allTowers;
+        public IIndexable<TerrainTowerEntity> AllTowers => m_terrainTowers;
 
-        //Event for Harmony Patch - TowerAreasRenderer
-        public Event<TerrainTowerEntity, RectangleTerrainArea2i> OnAreaChange { get; }
+        #region EVENTS - Harmony Patch - TowerAreasRenderer
 
-        //Event for Harmony Patch - TowerAreasRenderer
-        public Event<TerrainTowerEntity, EntityAddReason> OnTTAdded { get; }
+        private readonly Event<TerrainTowerEntity, RectangleTerrainArea2i> m_onAreaChange;
+        private readonly Event<TerrainTowerEntity, EntityAddReason> m_onTTAdded;
+        private readonly Event<TerrainTowerEntity, EntityRemoveReason> m_onTTRemoved;
+        public IEvent<TerrainTowerEntity, RectangleTerrainArea2i> OnAreaChange => m_onAreaChange;
+        public IEvent<TerrainTowerEntity, EntityAddReason> OnTTAdded => m_onTTAdded;
+        public IEvent<TerrainTowerEntity, EntityRemoveReason> OnTTRemoved => m_onTTRemoved;
 
-        //Event for Harmony Patch - TowerAreasRenderer
-        public Event<TerrainTowerEntity, EntityRemoveReason> OnTTRemoved { get; }
+        #endregion EVENTS - Harmony Patch - TowerAreasRenderer
 
         public static TerrainTowersManager Deserialize(BlobReader reader)
         {
@@ -325,28 +325,34 @@ namespace TerrainTower.TTower
 
         internal void InvokeOnAreaChanged(TerrainTowerEntity tower, RectangleTerrainArea2i area)
         {
-            OnAreaChange.Invoke(tower, area);
+            m_onAreaChange.Invoke(tower, area);
         }
 
         protected virtual void DeserializeData(BlobReader reader)
         {
-            reader.SetField(this, "m_entitiesManager", reader.ReadGenericAs<IEntitiesManager>());
-            reader.RegisterResolvedMember(this, "m_protosDb", typeof(ProtosDb), true);
-            reader.SetField(this, "m_terrainTowers", Lyst<TerrainTowerEntity>.Deserialize(reader));
+            reader.SetField(this, nameof(m_entitiesManager), reader.ReadGenericAs<IEntitiesManager>());
+            reader.RegisterResolvedMember(this, nameof(m_protosDb), typeof(ProtosDb), true);
+            reader.SetField(this, nameof(m_terrainTowers), Lyst<TerrainTowerEntity>.Deserialize(reader));
+            reader.SetField(this, nameof(m_onAreaChange), Event<TerrainTowerEntity, RectangleTerrainArea2i>.Deserialize(reader));
+            reader.SetField(this, nameof(m_onTTAdded), Event<TerrainTowerEntity, EntityAddReason>.Deserialize(reader));
+            reader.SetField(this, nameof(m_onTTRemoved), Event<TerrainTowerEntity, EntityRemoveReason>.Deserialize(reader));
         }
 
         protected virtual void SerializeData(BlobWriter writer)
         {
             writer.WriteGeneric(m_entitiesManager);
             Lyst<TerrainTowerEntity>.Serialize(m_terrainTowers, writer);
+            Event<TerrainTowerEntity, RectangleTerrainArea2i>.Serialize(m_onAreaChange, writer);
+            Event<TerrainTowerEntity, EntityAddReason>.Serialize(m_onTTAdded, writer);
+            Event<TerrainTowerEntity, EntityRemoveReason>.Serialize(m_onTTRemoved, writer);
         }
 
         private void entityAdded(IEntity entity, EntityAddReason addReason)
         {
             if (entity is TerrainTowerEntity tower)
             {
-                m_allTowers.Add(tower);
-                OnTTAdded.Invoke(tower, addReason);
+                m_terrainTowers.Add(tower);
+                m_onTTAdded.Invoke(tower, addReason);
             }
         }
 
@@ -354,8 +360,8 @@ namespace TerrainTower.TTower
         {
             if (entity is TerrainTowerEntity tower)
             {
-                Assert.AssertTrue(m_allTowers.TryRemoveReplaceLast(tower));
-                OnTTRemoved.Invoke(tower, removeReason);
+                Assert.AssertTrue(m_terrainTowers.TryRemoveReplaceLast(tower));
+                m_onTTRemoved.Invoke(tower, removeReason);
             }
         }
 
