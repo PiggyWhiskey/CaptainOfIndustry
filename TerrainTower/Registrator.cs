@@ -48,7 +48,7 @@ namespace TerrainTower
         public void RegisterData(ProtoRegistrator registrator)
         {
             _ = registrator.ResearchNodeProtoBuilder
-                .Start("Massive Storage Containers", Extras.CustomIds.Research.TerrainTowerResearchId)
+                .Start("Terrain Tower", Extras.CustomIds.Research.TerrainTowerResearchId)
                 .Description("Terrain Tower Research")
                 .AddLayoutEntityToUnlock(Extras.CustomIds.Prototypes.TerrainTowerProtoId)
                 .SetGridPosition(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.IronSmeltingScrap).GridPosition + new Vector2i(0, -4))
@@ -93,6 +93,14 @@ namespace TerrainTower
 
             notificationProtoBuilder
                 .Start("{entity}: blocked due to full output", Extras.CustomIds.Notifications.TerrainTowerBlockedOuput)
+                .SetType(NotificationType.Continuous)
+                .SetStyle(NotificationStyle.Warning)
+                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .AddIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .BuildAndAdd();
+
+            notificationProtoBuilder
+                .Start("{entity}: blocked due to full mixed buffer", Extras.CustomIds.Notifications.TerrainTowerFullMixedBuffer)
                 .SetType(NotificationType.Continuous)
                 .SetStyle(NotificationStyle.Warning)
                 .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")

@@ -11,6 +11,7 @@ namespace TerrainTower.Extras.CustomIds
         public static readonly EntityNotificationProto.ID TerrainTowerMissingDumpItem = new EntityNotificationProto.ID(nameof(TerrainTowerMissingDumpItem));
         public static readonly EntityNotificationProto.ID TerrainTowerMissingDumpDesignation = new EntityNotificationProto.ID(nameof(TerrainTowerMissingDumpDesignation));
         public static readonly EntityNotificationProto.ID TerrainTowerMissingMineDesignation = new EntityNotificationProto.ID(nameof(TerrainTowerMissingMineDesignation));
+        public static readonly EntityNotificationProto.ID TerrainTowerFullMixedBuffer = new EntityNotificationProto.ID(nameof(TerrainTowerFullMixedBuffer));
     }
 
     internal static class Prototypes

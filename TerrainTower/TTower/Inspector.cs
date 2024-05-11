@@ -100,6 +100,9 @@ namespace TerrainTower.TTower
         protected override void OnActivated()
         {
             base.OnActivated();
+            Assert.AssertTrue(m_towerAreasRenderer != null, "Tower Areas Renderer is NULL");
+            Assert.AssertTrue(m_towerAreasAndDesignatorsActivator != null, "Tower Areas and Designators Activator is NULL");
+            Assert.AssertTrue(SelectedEntity != null, "Selected Entity is NULL");
             m_towerAreasRenderer.SelectTowerArea((Option<IAreaManagingTower>)SelectedEntity);
             m_towerAreasAndDesignatorsActivator.Activate();
         }

@@ -115,9 +115,14 @@ namespace TerrainTower.TTower
             reader.SetField(this, nameof(m_productsData), Dict<ProductProto, TerrainTowerProductData>.Deserialize(reader));
             reader.SetField(this, nameof(m_dumpBuffers), Dict<ProductProto, GlobalOutputBuffer>.Deserialize(reader));
 
-            reader.SetField(this, nameof(m_terrainTowerManager), Option<TerrainTowersManager>.Deserialize(reader));
+            reader.SetField(this, nameof(m_productsManager), reader.ReadGenericAs<IProductsManager>());
 
+            m_terrainTowerManager = Option<TerrainTowersManager>.Deserialize(reader);
+
+            reader.SetField(this, nameof(m_designationManager), TerrainDesignationsManager.Deserialize(reader));
             reader.SetField(this, nameof(m_managedDesignations), Set<TerrainDesignation>.Deserialize(reader));
+            reader.SetField(this, nameof(m_unfulfilledDumpingDesignations), Set<TerrainDesignation>.Deserialize(reader));
+            reader.SetField(this, nameof(m_unfulfilledMiningDesignations), Set<TerrainDesignation>.Deserialize(reader));
 
             AllSupportedProducts = ImmutableArray<ProductProto>.Deserialize(reader);
 
@@ -134,6 +139,9 @@ namespace TerrainTower.TTower
             m_missingDumpingDesignationNotif = EntityNotificator.Deserialize(reader);
             m_missingMiningDesignationNotif = EntityNotificator.Deserialize(reader);
             m_outputBlockedNotif = EntityNotificator.Deserialize(reader);
+            m_inputBlockedNotif = EntityNotificator.Deserialize(reader);
+
+            reader.RegisterInitAfterLoad(this, nameof(initSelf), InitPriority.Normal);
         }
 
         protected override void SerializeData(BlobWriter writer)
@@ -154,9 +162,14 @@ namespace TerrainTower.TTower
             Dict<ProductProto, TerrainTowerProductData>.Serialize(m_productsData, writer);
             Dict<ProductProto, GlobalOutputBuffer>.Serialize(m_dumpBuffers, writer);
 
+            writer.WriteGeneric(m_productsManager);
+
             Option<TerrainTowersManager>.Serialize(m_terrainTowerManager, writer);
 
+            TerrainDesignationsManager.Serialize(m_designationManager, writer);
             Set<TerrainDesignation>.Serialize(m_managedDesignations, writer);
+            Set<TerrainDesignation>.Serialize(m_unfulfilledDumpingDesignations, writer);
+            Set<TerrainDesignation>.Serialize(m_unfulfilledMiningDesignations, writer);
 
             ImmutableArray<ProductProto>.Serialize(AllSupportedProducts, writer);
 
@@ -173,6 +186,7 @@ namespace TerrainTower.TTower
             EntityNotificator.Serialize(m_missingDumpingDesignationNotif, writer);
             EntityNotificator.Serialize(m_missingMiningDesignationNotif, writer);
             EntityNotificator.Serialize(m_outputBlockedNotif, writer);
+            EntityNotificator.Serialize(m_inputBlockedNotif, writer);
         }
 
         /// <summary>
@@ -180,8 +194,11 @@ namespace TerrainTower.TTower
         /// </summary>
         private void initData()
         {
+            Logger.Info("TerrainTowerEntity.initData");
             //Set Capacity
             Capacity = Prototype.BufferCapacity;
+
+            DumpTotal = m_dumpBuffers.Sum(buff => buff.Value.Quantity.Value).Quantity();
 
             //Set all minable products
             AllSupportedProducts = Context.ProtosDb.All<TerrainMaterialProto>().Select(x => (ProductProto)x.MinedProduct).Distinct().ToImmutableArray();
@@ -196,9 +213,7 @@ namespace TerrainTower.TTower
         [InitAfterLoad(InitPriority.Low)]
         private void initSelf(int saveVersion)
         {
-#if DEBUG2
-            Logger.InfoDebug("TerrainTowerEntity.initSelf");
-#endif
+            Logger.Info("TerrainTowerEntity.initSelf");
             if (m_productsData != null)
             {
                 //Create tmp Reference Buffers
@@ -210,9 +225,7 @@ namespace TerrainTower.TTower
             }
             else
             {
-#if DEBUG2
                 Logger.Warning("TerrainTowerEntity.initSelf: m_productsData is null");
-#endif
                 MixedTotal = Quantity.Zero;
             }
 
@@ -305,10 +318,10 @@ namespace TerrainTower.TTower
 
         public IReadOnlyCollection<IProductBuffer> DumpBuffers => m_dumpBuffers.Values;
 
-        //public Quantity DumpTotal => m_dumpBuffers.Sum(buff => buff.Value.Quantity.Value).Quantity();
         /// <summary>
         /// Local Variable - Sum of m_dumpBuffers quantity - Cached to allow fast access
         /// </summary>
+        [DoNotSave(0, null)]
         public Quantity DumpTotal { get; private set; }
 
         /// <summary>
@@ -341,6 +354,7 @@ namespace TerrainTower.TTower
         private readonly Set<TerrainDesignation> m_unfulfilledMiningDesignations;
 
         private EntityNotificator m_entityBoostedNotif;
+        private EntityNotificator m_inputBlockedNotif;
         private EntityNotificator m_missingDumpingDesignationNotif;
         private EntityNotificator m_missingDumpItemNotif;
         private EntityNotificator m_missingMiningDesignationNotif;
@@ -356,8 +370,10 @@ namespace TerrainTower.TTower
         private bool m_sortedBufferIsPositive;
         private Option<TerrainTowersManager> m_terrainTowerManager;
 
+        [DoNotSave(0, null)]
         private TerrainDesignation m_tmpDumpDesignation;
 
+        [DoNotSave(0, null)]
         private TerrainDesignation m_tmpMineDesignation;
 
         /// <summary>
@@ -426,6 +442,7 @@ namespace TerrainTower.TTower
             m_outputBlockedNotif = context.NotificationsManager.CreateNotificatorFor(Extras.CustomIds.Notifications.TerrainTowerBlockedOuput);
             m_missingMiningDesignationNotif = context.NotificationsManager.CreateNotificatorFor(Extras.CustomIds.Notifications.TerrainTowerMissingMineDesignation);
             m_missingDumpingDesignationNotif = context.NotificationsManager.CreateNotificatorFor(Extras.CustomIds.Notifications.TerrainTowerMissingDumpDesignation);
+            m_inputBlockedNotif = context.NotificationsManager.CreateNotificatorFor(Extras.CustomIds.Notifications.TerrainTowerFullMixedBuffer);
 
             //Add Calendar to track monthly sorting values
             m_calendar = calendar;
@@ -572,7 +589,7 @@ namespace TerrainTower.TTower
             if (!m_dumpBuffers.TryGetValue(pq.Product, out GlobalOutputBuffer dumpBuffer))
             {
                 dumpBuffer = new GlobalOutputBuffer(
-                    Prototype.BufferCapacity.ScaledBy(Context.PropertiesDb.GetProperty(IdsCore.PropertyIds.TrucksCapacityMultiplier).Value),
+                    Capacity,
                     pq.Product,
                     m_productsManager,
                     15,
@@ -782,6 +799,7 @@ namespace TerrainTower.TTower
                 Context.ProductsManager.ProductDestroyed(plantProductData.Buffer.Product, plantProductData.SortedQuantity + plantProductData.UnsortedQuantity, DestroyReason.Cleared);
                 Context.AssetTransactionManager.ClearAndDestroyBuffer(plantProductData.Buffer);
                 MixedTotal -= plantProductData.UnsortedQuantity;
+                updateMixedBufferNotifications();
             }
         }
 
@@ -820,7 +838,6 @@ namespace TerrainTower.TTower
                 char outputsName = m_outputsNames[portIndex];
                 if (m_productsData.TryGetValue(product, out TerrainTowerProductData productData) && productData.OutputPort != outputsName)
                 {
-                    Logger.InfoDebug("SetProductPortIndex: Product: {0} Port: {1}", product, outputsName);
                     productData.OutputPort = outputsName;
                 }
             }
@@ -895,7 +912,7 @@ namespace TerrainTower.TTower
                 outputPort = m_outputsNames.Last;
             }
             GlobalOutputBuffer buffer = new GlobalOutputBuffer(
-                Prototype.BufferCapacity.ScaledBy(Context.PropertiesDb.GetProperty(IdsCore.PropertyIds.TrucksCapacityMultiplier).Value),
+                Capacity,
                 product,
                 m_productsManager,
                 15,
@@ -1085,41 +1102,23 @@ namespace TerrainTower.TTower
         }
 
         /// <summary>
-        /// Move residual products from <see cref="TerrainTowerProductData.UnsortedQuantity"/> to <see cref="TerrainTowerProductData.Buffer"/>
+        /// Move residual products from <see cref="TerrainTowerProductData.SortedQuantity"/> to <see cref="TerrainTowerProductData.Buffer"/>
         /// </summary>
         private void pushSortedToBuffers()
         {
             m_sortedBufferIsPositive = false;
             bool HasStoredToBuffer = false;
+            Assert.AssertTrue(m_productsData != null);
             foreach (TerrainTowerProductData productData in m_productsData.Values)
             {
-                Quantity sortedQuantity = productData.SortedQuantity;
-                if (sortedQuantity.IsNotPositive)
-                {
-                    Assert.That(productData.SortedQuantity).IsNotNegative();
-                }
-                else
-                {
-                    HasStoredToBuffer = true;
-                    Quantity quantity = productData.Buffer.StoreAsMuchAsReturnStored(productData.SortedQuantity);
-                    if (quantity.IsPositive)
-                    {
-                        productData.SortedQuantity -= quantity;
-                        productData.SortedThisMonth += quantity;
-                        m_productsManager.ProductCreated(productData.Buffer.Product, quantity, CreateReason.MinedFromTerrain);
-                    }
-                    sortedQuantity = productData.SortedQuantity;
-                    if (sortedQuantity.IsPositive)
-                    {
-                        m_sortedBufferIsPositive = true;
-                    }
-                }
+                if (productData.SortedQuantity.IsNotPositive) { continue; }
+                HasStoredToBuffer = true;
+                Quantity quantity = productData.MoveSortedQuantityToBuffer();
+                if (quantity.IsPositive) { m_productsManager.ProductCreated(productData.Buffer.Product, quantity, CreateReason.MinedFromTerrain); }
+                if (productData.SortedQuantity.IsPositive) { m_sortedBufferIsPositive = true; }
             }
             //If Buffer has been added to, update Full Output Notifications
-            if (HasStoredToBuffer)
-            {
-                updateFullOutputNotifications();
-            }
+            if (HasStoredToBuffer) { updateFullOutputNotifications(); }
         }
 
         /// <summary>
@@ -1127,10 +1126,14 @@ namespace TerrainTower.TTower
         /// </summary>
         private void removeAllManagedDesignations()
         {
+            //TODO: Test if LINQ is working
+            m_managedDesignations.ForEach(designation => onDesignationRemoved(designation));
+#if false
             foreach (TerrainDesignation designation in m_managedDesignations.ToArray())
             {
                 onDesignationRemoved(designation);
             }
+#endif
             Assert.AssertTrue(m_managedDesignations.IsEmpty);
         }
 
@@ -1166,22 +1169,22 @@ namespace TerrainTower.TTower
         /// <returns>TRUE if Sorting Occured</returns>
         private bool simStepSorting()
         {
-            //Sorted Products (Between Mining/Buffer) are Positive = Push to Buffer (Left over from last Timer.IsFinished)
-            if (m_sortedBufferIsPositive) { pushSortedToBuffers(); }
-
+            bool sortedProducts = false;
             //We only sort if the Timer is Finished (Unsorted -> Sorted)
             if (m_sortingTimer.IsFinished)
             {
-                if (sortProducts())
+                sortedProducts = sortProducts();
+                if (sortedProducts)
                 {
                     //Products have been sorted, start the Timer
                     m_sortingTimer.Start(Prototype.SortDuration);
-                    //Products have been sorted, push to Buffer (For output)
-                    pushSortedToBuffers();
-                    return true;
                 }
             }
-            return false;
+
+            //Products have been sorted, push to Buffer (For output)
+            if (m_sortedBufferIsPositive || sortedProducts) { pushSortedToBuffers(); }
+
+            return sortedProducts;
         }
 
         /// <summary>
@@ -1194,39 +1197,39 @@ namespace TerrainTower.TTower
         {
             //FUTURE: Possible Changes - Allow 1x Mine & 1x Dump per round
             //FUTURE: Possible CHanges - Increase MAX_MINE or MAX_DUMP if Boosted
-            if (m_terrainTimer.IsFinished)
+            if (!m_terrainTimer.IsFinished)
             {
+                return false;
+            }
 #if DEBUG2
-                Logger.InfoDebug("simStepTerrainProcessing: State {0} - DumpTotal {1}", TerrainConfigState.ToString(), DumpTotal);
+            Logger.InfoDebug("simStepTerrainProcessing: State {0} - DumpTotal {1}", TerrainConfigState.ToString(), DumpTotal);
 #endif
 
-                bool ActionThisRound = false;
-                if (!ActionThisRound && TerrainConfigState.HasFlag(TerrainTowerConfigState.Mining) && ValidateMiningDesignation())
-                {
-                    ActionThisRound = tryMineDesignation(m_tmpMineDesignation, MAX_MINE_QUANTITY);
-                }
-
-                if (!ActionThisRound && TerrainConfigState.HasFlag(TerrainTowerConfigState.Dumping) && DumpTotal.IsPositive && ValidateDumpingDesignation())
-                {
-                    ActionThisRound = tryDumpDesignation(m_tmpDumpDesignation, MAX_DUMP_QUANTITY);
-                }
-
-                //Unity = 5x faster & No action = 2x slower.
-                /*
-                 * Boost + Active = 1 second
-                 * Boost + Not Active = 2.5 seconds
-                 * NoBoost + Active = 5 seconds
-                 * NoBoost + Not Active = 10 Seconds
-                */
-                Duration duration = Prototype.TerrainDuration / (IsBoostRequested ? 5 : 1) * (ActionThisRound ? 1 : 2);
-#if DEBUG2
-                Logger.InfoDebug("TerrainProcessing: Timer Start: {0} seconds", duration.Seconds);
-#endif
-                m_terrainTimer.Start(duration);
-                return ActionThisRound;
+            bool ActionThisRound = false;
+            if (!ActionThisRound && TerrainConfigState.HasFlag(TerrainTowerConfigState.Mining) && ValidateMiningDesignation())
+            {
+                ActionThisRound = tryMineDesignation(m_tmpMineDesignation, MAX_MINE_QUANTITY);
             }
 
-            return false;
+            if (!ActionThisRound && TerrainConfigState.HasFlag(TerrainTowerConfigState.Dumping) && DumpTotal.IsPositive && ValidateDumpingDesignation())
+            {
+                ActionThisRound = tryDumpDesignation(m_tmpDumpDesignation, MAX_DUMP_QUANTITY);
+            }
+
+            //Unity = 5x faster & No action = 2x slower.
+            /*
+                * Boost + Active = 1 second
+                * Boost + Not Active = 2.5 seconds
+                * NoBoost + Active = 5 seconds
+                * NoBoost + Not Active = 10 Seconds
+            */
+            Duration duration = Prototype.TerrainDuration / (IsBoostRequested ? 5 : 1) * (ActionThisRound ? 1 : 2);
+#if DEBUG2
+            Logger.InfoDebug("TerrainProcessing: Timer Start: {0} seconds", duration.Seconds);
+#endif
+            m_terrainTimer.Start(duration);
+            return ActionThisRound;
+
             //Separate designation validate functions to allow caching last used Designation - Prevents re-scanning entire list
             bool ValidateMiningDesignation()
             {
@@ -1355,11 +1358,11 @@ namespace TerrainTower.TTower
                         .Min(sortedPerDuration - quantitySortedRunningTotal);
 
                     //4. Move from Unsorted to Sorted buffers
-                    plantProductData.UnsortedQuantity -= tmpUnsortedQuantity;
-                    plantProductData.SortedQuantity += tmpUnsortedQuantity;
+                    tmpUnsortedQuantity = plantProductData.SortQuantity(tmpUnsortedQuantity);
 
                     //5. Remove sorted value from mixed buffer - Enumerator prevention
                     MixedTotal -= tmpUnsortedQuantity;
+                    updateMixedBufferNotifications();
 
                     //6. Rolling total of values sorted - after full loop = SortedPerDuration
                     quantitySortedRunningTotal += tmpUnsortedQuantity;
@@ -1402,7 +1405,7 @@ namespace TerrainTower.TTower
 
             if (designation == null || designation.IsDumpingFulfilled || maxDumpQuantity.IsNotPositive || DumpTotal.IsNotPositive)
             {
-                Logger.InfoDebug("tryDumpDesignation: IsDumpingFulfilled {0} - maxDumpQuantity {1} - DumpTotal {2}", designation.IsDumpingFulfilled, maxDumpQuantity, DumpTotal);
+                //Logger.InfoDebug("tryDumpDesignation: IsDumpingFulfilled {0} - maxDumpQuantity {1} - DumpTotal {2}", designation.IsDumpingFulfilled, maxDumpQuantity, DumpTotal);
                 //Invalid Designation, already fulfilled, or no quantity to dump or DumpTotal is empty
                 m_missingDumpItemNotif.NotifyIff(DumpTotal.IsNotPositive, this);
                 return false;
@@ -1500,8 +1503,8 @@ namespace TerrainTower.TTower
 #if DEBUG2
             Logger.InfoDebug("tryMineDesignation: Designation: {0} - maxMineQuantity: {1}", designation.ToStringSafe(), maxMineQuantity);
 #endif
-
-            if (designation == null || designation.IsMiningFulfilled || maxMineQuantity.IsNotPositive)
+            //TODO:  MixedTotal >= Capacity OR during tile Loop, MixedCapacityLeft <= maxMineQuantity
+            if (designation == null || designation.IsMiningFulfilled || maxMineQuantity.IsNotPositive || MixedTotal >= Capacity)
             {
                 //Invalid Designation, already fulfilled, or no quantity to min
                 return false;
@@ -1625,6 +1628,7 @@ namespace TerrainTower.TTower
             }
             m_productsData[ppq.Product].UnsortedQuantity += quantityMined;
             MixedTotal += quantityMined;
+            updateMixedBufferNotifications();
             maxMineQuantity -= quantityMined;
 
             return true;
@@ -1651,6 +1655,11 @@ namespace TerrainTower.TTower
             m_outputBlockedNotif.NotifyIff(shouldNotify, this);
         }
 
+        private void updateMixedBufferNotifications()
+        {
+            m_inputBlockedNotif.NotifyIff(IsEnabled && MixedTotal >= (Capacity - MAX_MINE_QUANTITY), this);
+        }
+
         /// <summary>
         /// Update the Mixed Quantity from all <see cref="m_productsData"/>
         /// </summary>
@@ -1662,6 +1671,7 @@ namespace TerrainTower.TTower
                 val += productData.UnsortedQuantity;
             }
             MixedTotal = val;
+            updateMixedBufferNotifications();
         }
 
         /// <summary>

@@ -31,8 +31,9 @@ namespace TerrainTower.TTower
             private static readonly string[] s_defaultAlert = { "Rock", "Dirt" };
 
             private static readonly string[] s_lossSafeProducts = { "Rock", "Gravel", "Slag", "Dirt" };
+            private readonly Quantity m_sortedCapacity;
 
-            public TerrainTowerProductData(GlobalOutputBuffer buffer, char outputPort)
+            public TerrainTowerProductData(GlobalOutputBuffer buffer, Quantity SortedCapacityLimit, char outputPort)
             {
                 Buffer = buffer;
                 OutputPort = outputPort;
@@ -43,7 +44,7 @@ namespace TerrainTower.TTower
                 //Rock/Gravel/Slag/Dirt cannot have conversion loss
                 //IsWaste cannot have conversion loss
                 //Automatically set FullOutput alert for Rock & Dirt
-
+                m_sortedCapacity = SortedCapacityLimit;
                 CanBeWasted = !product.IsWaste && !s_lossSafeProducts.Contains(product.Id.Value);
                 NotifyIfFullOutput = s_defaultAlert.Contains(product.Id.Value);
             }
@@ -77,6 +78,8 @@ namespace TerrainTower.TTower
             /// </summary>
             public Quantity UnsortedQuantity { get; set; }
 
+            private Quantity SortedCapacityRemaining => SortedQuantity >= m_sortedCapacity ? Quantity.Zero : m_sortedCapacity - SortedQuantity;
+
             public void OnNewMonth()
             {
                 SortedLastMonth = SortedThisMonth;
@@ -86,26 +89,31 @@ namespace TerrainTower.TTower
             /// <summary>
             /// Move from SortedQuantity to Buffer
             /// </summary>
-            /// <returns>TRUE if any product remains to be sorted</returns>
-            internal bool MoveSortedQuantityToBuffer()
+            /// <returns>Quantity moved to Buffer</returns>
+            internal Quantity MoveSortedQuantityToBuffer()
             {
                 Quantity quantity = Buffer.StoreAsMuchAsReturnStored(SortedQuantity);
                 if (quantity.IsPositive)
                 {
                     SortedQuantity -= quantity;
+                    SortedThisMonth += quantity;
                 }
-                return SortedQuantity.IsPositive;
+                return quantity;
             }
 
             /// <summary>
             /// Move from Mining Result (UnsortedQuantity) to SortedQuantity
-            /// Called externally to trickle sort via SimUpdate
+            /// - Called externally to trickle sort via SimUpdate
             /// </summary>
             /// <param name="quantity">Quantity to move</param>
-            internal void SortQuantity(Quantity quantity)
+            /// <returns>Quantity that could not be moved</returns>
+            internal Quantity SortQuantity(Quantity quantity)
             {
-                UnsortedQuantity -= quantity;
-                SortedQuantity += quantity;
+                //Get the minimum of the quantity to move and the remaining capacity
+                Quantity tmpQuant = quantity.Min(SortedCapacityRemaining);
+                UnsortedQuantity -= tmpQuant;
+                SortedQuantity += tmpQuant;
+                return quantity - tmpQuant;
             }
 
             #region SERIALISATION
