@@ -10,7 +10,6 @@
     <PackageOutputPath>$(OutputPath)</PackageOutputPath>
     <CopyOutputFiles>true</CopyOutputFiles>
     <OutputPath>$(OutputPath)</OutputPath>
-    <OutputPath>$(OutputPath)\..\AnotherLocation</OutputPath>
     <Title>$(AssemblyName)</Title>
     <PackageProjectUrl>https://github.com/PiggyWhiskey/CaptainOfIndustry</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
@@ -32,13 +31,6 @@
     <OutputPath>bin\Release\$(MSBuildProjectName)</OutputPath>
     <IsPublishable>True</IsPublishable>
   </PropertyGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release'">
-    <Exec Command="powershell Compress-Archive -Path '$(OutDir)' -DestinationPath '$(ProjectDir)\$(MSBuildProjectName).zip' -Force" />
-  </Target>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Debug'">
-    <Exec Command="powershell Copy-Item -Path '$(OutDir)TerrainTower.dll' -Destination 'C:\Users\Nathan Brom\AppData\Roaming\Captain of Industry\Mods\TerrainTower\TerrainTower.dll' -Force" />
-  </Target>
   
   
   <ItemGroup>
@@ -132,4 +124,14 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
+  
+  
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="echo 'Copy DLL to [C:\Users\Nathan Brom\AppData\Roaming\Captain of Industry\Mods\TerrainTower\TerrainTower.dll]'" />
+    <Exec Command="powershell Copy-Item -Path '$(OutDir)TerrainTower.dll' -Destination 'C:\Users\Nathan Brom\AppData\Roaming\Captain of Industry\Mods\TerrainTower\TerrainTower.dll' -Force" />
+  </Target>
+  <Target Name="PostBuildRelease" AfterTargets="PostBuild" Condition="'$(Configuration)'=='Release'">
+    <Exec Command ="echo 'Build ZIP to [$(ProjectDir)\$(MSBuildProjectName).zip]'"/>
+    <Exec Command ="powershell Compress-Archive -Path '$(OutDir)' -DestinationPath '$(ProjectDir)\$(MSBuildProjectName).zip' -Force"/>
+  </Target>
 </Project>

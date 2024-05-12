@@ -917,7 +917,7 @@ namespace TerrainTower.TTower
                 m_productsManager,
                 15,
                 this);
-            TerrainTowerProductData productData = new TerrainTowerProductData(buffer, outputPort);
+            TerrainTowerProductData productData = new TerrainTowerProductData(buffer, MAX_MINE_QUANTITY, outputPort);
             m_productsData.Add(buffer.Product, productData);
             m_outputBuffers.Add(productData.Buffer);
         }
