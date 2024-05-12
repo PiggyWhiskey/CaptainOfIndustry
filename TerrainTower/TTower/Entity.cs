@@ -22,6 +22,7 @@ using Mafi.Core.Simulation;
 using Mafi.Core.Terrain;
 using Mafi.Core.Terrain.Designation;
 using Mafi.Core.Terrain.Props;
+using Mafi.Core.Terrain.Trees;
 using Mafi.Core.Utils;
 using Mafi.Serialization;
 
@@ -968,6 +969,8 @@ namespace TerrainTower.TTower
         private void clearProps(Tile2i tile)
         {
             TerrainPropsManager tpm = m_designationManager.TerrainPropsManager;
+
+            m_designationManager.TreesManager.RemoveStumpAtTile(tile);
             if (tpm.TerrainTileToProp.TryGetValue(tile.AsSlim, out TerrainPropId key))
             {
                 if (!tpm.TerrainProps.TryGetValue(key, out TerrainPropData propData))
@@ -1036,13 +1039,14 @@ namespace TerrainTower.TTower
             {
                 if (designation.IsMiningFulfilled)
                 {
-                    if (!m_unfulfilledMiningDesignations.Remove(designation))
+                    if (m_unfulfilledMiningDesignations.Contains(designation) && !m_unfulfilledMiningDesignations.Remove(designation))
                     {
                         Logger.Warning("{0} Designation was not in unfulfilled mining designations", nameof(onDesignationFulfilledChanged));
                     }
                 }
                 else
                 {
+                    //Handle spill over causing designation to be unfulfilled
                     m_unfulfilledMiningDesignations.AddAndAssertNew(designation);
                 }
             }
@@ -1051,13 +1055,14 @@ namespace TerrainTower.TTower
             {
                 if (designation.IsDumpingFulfilled)
                 {
-                    if (!m_unfulfilledDumpingDesignations.Remove(designation))
+                    if (m_unfulfilledMiningDesignations.Contains(designation) && !m_unfulfilledDumpingDesignations.Remove(designation))
                     {
                         Logger.Warning("{0} Designation was not in unfulfilled dumping designations", nameof(onDesignationFulfilledChanged));
                     }
                 }
                 else
                 {
+                    //Handle terrain collapse over causing designation to be unfulfilled
                     m_unfulfilledDumpingDesignations.AddAndAssertNew(designation);
                 }
             }
