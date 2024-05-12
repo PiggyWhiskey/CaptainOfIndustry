@@ -215,7 +215,12 @@ namespace TerrainTower.TTower
         [InitAfterLoad(InitPriority.Low)]
         private void initSelf(int saveVersion)
         {
+
             Logger.Info("TerrainTowerEntity.initSelf");
+
+            //Call Universal Init (Whether Construtor or Deserialisation)
+            initData();
+
             if (m_productsData != null)
             {
                 //Create tmp Reference Buffers
@@ -231,8 +236,7 @@ namespace TerrainTower.TTower
                 MixedTotal = Quantity.Zero;
             }
 
-            //Call Universal Init (Whether Construtor or Deserialisation)
-            initData();
+            updateTerrainNotifications();
 
             //Mimic Machine Entity
             if (IsBoostRequested)
