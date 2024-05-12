@@ -31,9 +31,8 @@ namespace TerrainTower.TTower
             private static readonly string[] s_defaultAlert = { "Rock", "Dirt" };
 
             private static readonly string[] s_lossSafeProducts = { "Rock", "Gravel", "Slag", "Dirt" };
-            private readonly Quantity m_sortedCapacity;
 
-            public TerrainTowerProductData(GlobalOutputBuffer buffer, Quantity SortedCapacityLimit, char outputPort)
+            public TerrainTowerProductData(GlobalOutputBuffer buffer, char outputPort)
             {
                 Buffer = buffer;
                 OutputPort = outputPort;
@@ -44,7 +43,6 @@ namespace TerrainTower.TTower
                 //Rock/Gravel/Slag/Dirt cannot have conversion loss
                 //IsWaste cannot have conversion loss
                 //Automatically set FullOutput alert for Rock & Dirt
-                m_sortedCapacity = SortedCapacityLimit;
                 CanBeWasted = !product.IsWaste && !s_lossSafeProducts.Contains(product.Id.Value);
                 NotifyIfFullOutput = s_defaultAlert.Contains(product.Id.Value);
             }
@@ -78,8 +76,6 @@ namespace TerrainTower.TTower
             /// </summary>
             public Quantity UnsortedQuantity { get; set; }
 
-            private Quantity SortedCapacityRemaining => SortedQuantity >= m_sortedCapacity ? Quantity.Zero : m_sortedCapacity - SortedQuantity;
-
             public void OnNewMonth()
             {
                 SortedLastMonth = SortedThisMonth;
@@ -106,14 +102,12 @@ namespace TerrainTower.TTower
             /// - Called externally to trickle sort via SimUpdate
             /// </summary>
             /// <param name="quantity">Quantity to move</param>
-            /// <returns>Quantity that could not be moved</returns>
-            internal Quantity SortQuantity(Quantity quantity)
+            internal void SortQuantity(Quantity quantity)
             {
                 //Get the minimum of the quantity to move and the remaining capacity
-                Quantity tmpQuant = quantity.Min(SortedCapacityRemaining);
-                UnsortedQuantity -= tmpQuant;
-                SortedQuantity += tmpQuant;
-                return quantity - tmpQuant;
+                UnsortedQuantity -= quantity;
+                SortedQuantity += quantity;
+                return;
             }
 
             #region SERIALISATION

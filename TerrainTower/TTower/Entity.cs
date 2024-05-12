@@ -31,6 +31,8 @@ using System.Linq;
 
 using TerrainTower.Extras;
 
+using static Mafi.Base.Prototypes.Buildings.ThermalStorages.ThermalStorageProto;
+
 namespace TerrainTower.TTower
 {
     /// <summary>
@@ -917,7 +919,7 @@ namespace TerrainTower.TTower
                 m_productsManager,
                 15,
                 this);
-            TerrainTowerProductData productData = new TerrainTowerProductData(buffer, MAX_MINE_QUANTITY, outputPort);
+            TerrainTowerProductData productData = new TerrainTowerProductData(buffer, outputPort);
             m_productsData.Add(buffer.Product, productData);
             m_outputBuffers.Add(productData.Buffer);
         }
@@ -973,7 +975,7 @@ namespace TerrainTower.TTower
         /// <param name="tile">Tile2i of location</param>
         private void clearProps(Tile2i tile)
         {
-#if DEBUG
+#if DEBUG2
             //m_designationManager.TerrainPropsManager.ContainsPropInDesignation(designation)
             Logger.InfoDebug("clearProps: {0}", tile);
 #endif
@@ -1111,6 +1113,14 @@ namespace TerrainTower.TTower
             Assert.AssertTrue(m_productsData != null);
             foreach (TerrainTowerProductData productData in m_productsData.Values)
             {
+#if DEBUG
+                Logger.InfoDebug("pushSortedToBuffers: Product {0} - UnsortedQuantity: {1} - SortedQuantity: {2} - Buffer: {3}",
+                    productData.Buffer.Product,
+                    productData.UnsortedQuantity,
+                    productData.SortedQuantity,
+                    productData.Buffer.Quantity);
+#endif
+
                 if (productData.SortedQuantity.IsNotPositive) { continue; }
                 HasStoredToBuffer = true;
                 Quantity quantity = productData.MoveSortedQuantityToBuffer();
@@ -1169,22 +1179,22 @@ namespace TerrainTower.TTower
         /// <returns>TRUE if Sorting Occured</returns>
         private bool simStepSorting()
         {
-            bool sortedProducts = false;
+            //Sorted Products (Between Mining/Buffer) are Positive = Push to Buffer (Left over from last Timer.IsFinished)
+            if (m_sortedBufferIsPositive) { pushSortedToBuffers(); }
+
             //We only sort if the Timer is Finished (Unsorted -> Sorted)
             if (m_sortingTimer.IsFinished)
             {
-                sortedProducts = sortProducts();
-                if (sortedProducts)
+                if (sortProducts())
                 {
                     //Products have been sorted, start the Timer
                     m_sortingTimer.Start(Prototype.SortDuration);
+                    //Products have been sorted, push to Buffer (For output)
+                    pushSortedToBuffers();
+                    return true;
                 }
             }
-
-            //Products have been sorted, push to Buffer (For output)
-            if (m_sortedBufferIsPositive || sortedProducts) { pushSortedToBuffers(); }
-
-            return sortedProducts;
+            return false;
         }
 
         /// <summary>
@@ -1304,6 +1314,7 @@ namespace TerrainTower.TTower
 
         /// <summary>
         /// Process Unsorted Products to Sorted Products and conduct Waste/Conversion Loss for configured products
+        /// - Only sort if the 'Sorted Quantity' is Zero
         /// </summary>
         /// <returns>TRUE if any products were Sorted</returns>
         private bool sortProducts()
@@ -1319,29 +1330,31 @@ namespace TerrainTower.TTower
             //Summary: Total products availble to be sorted
             Quantity quantityToSortTotal = Quantity.Zero;
 
-            //quantityToSortTotal = m_productsData.Values.Where(p => !p.SortedQuantity.IsPositive).Sum(p => p.UnsortedQuantity.Value).Quantity();
+#if DEBUG
+            quantityToSortTotal = m_productsData.Values.Where(p => !p.SortedQuantity.IsPositive).Sum(p => p.UnsortedQuantity.Value).Quantity();
+#else
             foreach (TerrainTowerProductData plantProductData in m_productsData.Values)
             {
-#if DEBUG2
-                Logger.InfoDebug("sortProducts: UnsortedQuantity: {0} - SortedQuantity:{1}", plantProductData.UnsortedQuantity, plantProductData.SortedQuantity);
-#endif
                 //Don't add UnsortedQuantity if SortedQuantity has product (This shows that the previous sort was not completed i.e. Buffer Full)
-                if (!plantProductData.SortedQuantity.IsPositive)
-                {
-                    quantityToSortTotal += plantProductData.UnsortedQuantity;
-                }
+                if (!plantProductData.SortedQuantity.IsPositive) { quantityToSortTotal += plantProductData.UnsortedQuantity; }
             }
+#endif
 
             foreach (TerrainTowerProductData plantProductData in m_productsData.Values)
             {
+#if DEBUG
+                Logger.InfoDebug("sortProducts: Product {0} - UnsortedQuantity: {1} - SortedQuantity: {2} - Buffer: {3} - RunningTotal: {4}",
+                    plantProductData.Buffer.Product,
+                    plantProductData.UnsortedQuantity,
+                    plantProductData.SortedQuantity,
+                    plantProductData.Buffer.Quantity,
+                    quantitySortedRunningTotal);
+#endif
                 //If we have sorted all we can, break
                 if ((quantitySortedRunningTotal >= sortedPerDuration))
                 {
                     break;
                 }
-#if DEBUG2
-                Logger.InfoDebug("sortProducts: Sorting {0} - UnsortedQuantity {1}", plantProductData.Buffer.Product, plantProductData.UnsortedQuantity);
-#endif
 
                 //Quantity bufferQuantity = plantProductData.SortedQuantity; added to next IF statement
                 if (plantProductData.SortedQuantity.IsNotPositive && plantProductData.UnsortedQuantity.IsPositive)
@@ -1358,7 +1371,7 @@ namespace TerrainTower.TTower
                         .Min(sortedPerDuration - quantitySortedRunningTotal);
 
                     //4. Move from Unsorted to Sorted buffers
-                    tmpUnsortedQuantity = plantProductData.SortQuantity(tmpUnsortedQuantity);
+                    plantProductData.SortQuantity(tmpUnsortedQuantity);
 
                     //5. Remove sorted value from mixed buffer - Enumerator prevention
                     MixedTotal -= tmpUnsortedQuantity;
