@@ -732,14 +732,7 @@ namespace TerrainTower.TTower
                 onDesignationAdded(designation);
             }
 
-#if true
             m_terrainTowerManager.ValueOrNull?.InvokeOnAreaChanged(this, oldArea);
-#else
-            if (m_terrainTowerManager.HasValue)
-            {
-                m_terrainTowerManager.Value.InvokeOnAreaChanged(this, oldArea);
-            }
-#endif
         }
 
         /// <summary>
@@ -939,12 +932,7 @@ namespace TerrainTower.TTower
             Tile2i absolute4 = relAreaToAbsolute(initOrigin - relTile2i1);
             Tile2i tile2i = absolute1.Min(absolute2).Min(absolute3).Min(absolute4);
 
-            //BUGFIX: Source of error on new Tower creation
-#if true
             EditManagedArea(new RectangleTerrainArea2i(tile2i, Prototype.Area.InitialSize));
-#else
-            Area = new RectangleTerrainArea2i(tile2i, Prototype.Area.InitialSize);
-#endif
             Tile2i relAreaToAbsolute(RelTile2i tile)
             {
                 return Prototype.Layout.Transform(tile, Transform);
@@ -975,10 +963,6 @@ namespace TerrainTower.TTower
         /// <param name="tile">Tile2i of location</param>
         private void clearProps(Tile2i tile)
         {
-#if DEBUG2
-            //m_designationManager.TerrainPropsManager.ContainsPropInDesignation(designation)
-            Logger.InfoDebug("clearProps: {0}", tile);
-#endif
             TerrainPropsManager tpm = m_designationManager.TerrainPropsManager;
             if (tpm.TerrainTileToProp.TryGetValue(tile.AsSlim, out TerrainPropId key))
             {
@@ -1113,14 +1097,6 @@ namespace TerrainTower.TTower
             Assert.AssertTrue(m_productsData != null);
             foreach (TerrainTowerProductData productData in m_productsData.Values)
             {
-#if DEBUG
-                Logger.InfoDebug("pushSortedToBuffers: Product {0} - UnsortedQuantity: {1} - SortedQuantity: {2} - Buffer: {3}",
-                    productData.Buffer.Product,
-                    productData.UnsortedQuantity,
-                    productData.SortedQuantity,
-                    productData.Buffer.Quantity);
-#endif
-
                 if (productData.SortedQuantity.IsNotPositive) { continue; }
                 HasStoredToBuffer = true;
                 Quantity quantity = productData.MoveSortedQuantityToBuffer();
@@ -1138,12 +1114,6 @@ namespace TerrainTower.TTower
         {
             //TODO: Test if LINQ is working
             m_managedDesignations.ForEach(designation => onDesignationRemoved(designation));
-#if false
-            foreach (TerrainDesignation designation in m_managedDesignations.ToArray())
-            {
-                onDesignationRemoved(designation);
-            }
-#endif
             Assert.AssertTrue(m_managedDesignations.IsEmpty);
         }
 
@@ -1211,9 +1181,6 @@ namespace TerrainTower.TTower
             {
                 return false;
             }
-#if DEBUG2
-            Logger.InfoDebug("simStepTerrainProcessing: State {0} - DumpTotal {1}", TerrainConfigState.ToString(), DumpTotal);
-#endif
 
             bool ActionThisRound = false;
             if (!ActionThisRound && TerrainConfigState.HasFlag(TerrainTowerConfigState.Mining) && ValidateMiningDesignation())
@@ -1234,9 +1201,6 @@ namespace TerrainTower.TTower
                 * NoBoost + Not Active = 10 Seconds
             */
             Duration duration = Prototype.TerrainDuration / (IsBoostRequested ? 5 : 1) * (ActionThisRound ? 1 : 2);
-#if DEBUG2
-            Logger.InfoDebug("TerrainProcessing: Timer Start: {0} seconds", duration.Seconds);
-#endif
             m_terrainTimer.Start(duration);
             return ActionThisRound;
 
@@ -1247,9 +1211,6 @@ namespace TerrainTower.TTower
                 {
                     if (Functions.TryFindUnfulfilledDesignation_Mining(m_unfulfilledMiningDesignations, Position2f.Tile2i, out TerrainDesignation bestMineDesig))
                     {
-#if DEBUG2
-                        Logger.InfoDebug("ValidateMiningDesignation: New Mining Designation: {0}", bestMineDesig.ToStringSafe());
-#endif
                         m_tmpMineDesignation = bestMineDesig;
                         Assert.AssertTrue(m_tmpMineDesignation.IsMiningNotFulfilled, "Mining Designation should be unfulfilled");
                     }
@@ -1267,9 +1228,6 @@ namespace TerrainTower.TTower
                 {
                     if (Functions.TryFindUnfulfilledDesignation_Dumping(m_unfulfilledDumpingDesignations, Position2f.Tile2i, out TerrainDesignation bestDumpDesig))
                     {
-#if DEBUG2
-                        Logger.InfoDebug("ValidateDumpingDesignation: New Mining Designation: {0}", bestDumpDesig.ToStringSafe());
-#endif
                         m_tmpDumpDesignation = bestDumpDesig;
                         Assert.AssertTrue(m_tmpDumpDesignation.IsDumpingNotFulfilled, "Dumping Designation should be unfulfilled");
                     }
@@ -1330,26 +1288,10 @@ namespace TerrainTower.TTower
             //Summary: Total products availble to be sorted
             Quantity quantityToSortTotal = Quantity.Zero;
 
-#if DEBUG
             quantityToSortTotal = m_productsData.Values.Where(p => !p.SortedQuantity.IsPositive).Sum(p => p.UnsortedQuantity.Value).Quantity();
-#else
-            foreach (TerrainTowerProductData plantProductData in m_productsData.Values)
-            {
-                //Don't add UnsortedQuantity if SortedQuantity has product (This shows that the previous sort was not completed i.e. Buffer Full)
-                if (!plantProductData.SortedQuantity.IsPositive) { quantityToSortTotal += plantProductData.UnsortedQuantity; }
-            }
-#endif
 
             foreach (TerrainTowerProductData plantProductData in m_productsData.Values)
             {
-#if DEBUG
-                Logger.InfoDebug("sortProducts: Product {0} - UnsortedQuantity: {1} - SortedQuantity: {2} - Buffer: {3} - RunningTotal: {4}",
-                    plantProductData.Buffer.Product,
-                    plantProductData.UnsortedQuantity,
-                    plantProductData.SortedQuantity,
-                    plantProductData.Buffer.Quantity,
-                    quantitySortedRunningTotal);
-#endif
                 //If we have sorted all we can, break
                 if ((quantitySortedRunningTotal >= sortedPerDuration))
                 {
@@ -1412,9 +1354,6 @@ namespace TerrainTower.TTower
         /// <returns>TRUE if any dumping occured</returns>
         private bool tryDumpDesignation(TerrainDesignation designation, Quantity maxDumpQuantity)
         {
-#if DEBUG2
-            Logger.InfoDebug("tryDumpDesignation: Designation: {0} - maxDumpQuantity: {1} - DumpTotal: {2}", designation.ToStringSafe(), maxDumpQuantity, DumpTotal);
-#endif
 
             if (designation == null || designation.IsDumpingFulfilled || maxDumpQuantity.IsNotPositive || DumpTotal.IsNotPositive)
             {
@@ -1439,9 +1378,6 @@ namespace TerrainTower.TTower
             // Min (Dump Buffer | maxDumpQuantity)
             LooseProductQuantity looseProductQuantity = new LooseProductQuantity(buff.Product.DumpableProduct.Value, maxDumpQuantity.Min(buff.Quantity));
 
-#if DEBUG2
-            Logger.InfoDebug("tryDumpDesignation: Dumping {0} - {1}", looseProductQuantity.Product.ToString(), looseProductQuantity.Quantity);
-#endif
             //Convert to Thickness (Total thickness dumpable during this process)
             ThicknessTilesF dumpTotalThickness = looseProductQuantity.ToTerrainThickness().Thickness;
 
@@ -1482,10 +1418,6 @@ namespace TerrainTower.TTower
                 } // J Loop
             } // I Loop
 
-#if DEBUG2
-            Logger.InfoDebug("tryDumpDesignation: baseThickness {0} - leftoverThickness {1}", looseProductQuantity.ToTerrainThickness().Thickness, dumpTotalThickness);
-#endif
-
             ProductQuantity totalDumped = new TerrainMaterialThickness(looseProductQuantity.Product.TerrainMaterial.Value, dumpTotalThickness).ToProductQuantityRounded();
 
             if ((buff.Quantity - totalDumped.Quantity) <= Quantity.One)
@@ -1499,9 +1431,6 @@ namespace TerrainTower.TTower
             DumpTotal -= totalDumped.Quantity;
             Context.ProductsManager.ProductDestroyed(totalDumped, DestroyReason.DumpedOnTerrain);
 
-#if DEBUG2
-            Logger.InfoDebug("trympDesignation: Total Dumped: {0}", totalDumped.Quantity);
-#endif
             return Action;
         }
 
@@ -1513,9 +1442,6 @@ namespace TerrainTower.TTower
         /// <returns>TRUE if any mmining occured</returns>
         private bool tryMineDesignation(TerrainDesignation designation, Quantity maxMineQuantity)
         {
-#if DEBUG2
-            Logger.InfoDebug("tryMineDesignation: Designation: {0} - maxMineQuantity: {1}", designation.ToStringSafe(), maxMineQuantity);
-#endif
             //TODO:  MixedTotal >= Capacity OR during tile Loop, MixedCapacityLeft <= maxMineQuantity
             if (designation == null || designation.IsMiningFulfilled || maxMineQuantity.IsNotPositive || MixedTotal >= Capacity)
             {
@@ -1570,15 +1496,8 @@ namespace TerrainTower.TTower
             //Not enough layers to mine
             if (ContextTerrainManager.GetLayersCountNoBedrock(tileAndIndex.Index) < (firstLayer ? 1 : 2))
             {
-#if DEBUG2
-                Logger.InfoDebug("tryMineDesignation_MineLayer: Insufficient Layers - Layer {0}", firstLayer ? 1 : 2);
-#endif
                 return false;
             }
-
-#if DEBUG2
-            Logger.InfoDebug("tryMineDesignation_MineLayer: Mining Layer {0} at {1}", firstLayer ? 1 : 2, tileAndIndex.ToString());
-#endif
 
             TerrainMaterialThickness terrainLayer = firstLayer
                 ? ContextTerrainManager.GetFirstLayer(tileAndIndex.Index)
@@ -1590,9 +1509,6 @@ namespace TerrainTower.TTower
             //AllowedProducts = m_productsData.Keys
             if (!(AllSupportedProducts.Contains(terrainLayer.Material.MinedProduct) || AllowedProducts.Contains(terrainLayer.Material.MinedProduct)))
             {
-#if DEBUG2
-                Logger.InfoDebug("tryMineDesignation_MineLayer: Not allowed to mine {0}", terrainLayer.Material.MinedProduct.ToStringSafe());
-#endif
                 return false;
             }
 
@@ -1605,10 +1521,6 @@ namespace TerrainTower.TTower
             //TODO: Possible issue with rounding down to 0 thickness leaving tiny clumps and designation being considered 'Complete'
             if (maxThickness.IsNotPositive)
             {
-#if DEBUG2
-                Logger.InfoDebug("tryMineDesignation_MineLayer: Not thick enough to mine - {0}", maxThickness);
-#endif
-
                 return false;
             }
 
@@ -1622,9 +1534,6 @@ namespace TerrainTower.TTower
             //No Mining Output
             if (miningOutput.Thickness.IsZero)
             {
-#if DEBUG2
-                Logger.InfoDebug("tryMineDesignation_MineLayer: 0 Thickness Mined");
-#endif
                 return false;
             }
 
@@ -1632,9 +1541,6 @@ namespace TerrainTower.TTower
             //TODO: Some rounding loss, Change TerrainTowerProductData to PartialQuantity???
             Quantity quantityMined = ppq.Quantity.IntegerPart;
 
-#if DEBUG2
-            Logger.InfoDebug("tryMineDesignation_MineLayer: Mined {0} of {1}", quantityMined, ppq.Product.ToStringSafe());
-#endif
             if (!m_productsData.ContainsKey(ppq.Product))
             {
                 addProductDataFor(ppq.Product);
@@ -1653,9 +1559,6 @@ namespace TerrainTower.TTower
             bool shouldNotify = false;
             if (IsEnabled && m_sortedBufferIsPositive)
             {
-#if DEBUG2
-                Logger.InfoDebug("TerrainTowerEntity.SimUpdate: Temp Buffers Full");
-#endif
                 foreach (TerrainTowerProductData productData in m_productsData.Values)
                 {
                     if (productData.NotifyIfFullOutput && productData.Buffer.IsFull)
