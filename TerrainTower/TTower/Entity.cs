@@ -1112,8 +1112,10 @@ namespace TerrainTower.TTower
         /// </summary>
         private void removeAllManagedDesignations()
         {
-            //TODO: Test if LINQ is working
-            m_managedDesignations.ForEach(designation => onDesignationRemoved(designation));
+            foreach (TerrainDesignation designation in m_managedDesignations.ToArray())
+            {
+                onDesignationRemoved(designation);
+            }
             Assert.AssertTrue(m_managedDesignations.IsEmpty);
         }
 
