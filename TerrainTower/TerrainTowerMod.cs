@@ -11,7 +11,7 @@ namespace TerrainTower
     public sealed class TerrainTowerMod : DataOnlyMod
     {
         public override string Name => "Terrain Tower";
-        public override int Version => 1;
+        public override int Version => 2;
 
         public static Version ModVersion = new Version(1, 0, 0);
         public new bool IsUiOnly => false;
