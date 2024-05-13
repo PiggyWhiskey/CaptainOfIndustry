@@ -15,7 +15,6 @@ namespace TerrainTower.TTower
         /// SortedQuantity = Trickled from UnsortedQuantity, and then moved to Buffer
         /// Buffer = Storage to output to external entities (Conveyors/Storages)
         /// </summary>
-        [GenerateSerializer]
         internal class TerrainTowerProductData
         {
             /// <summary>
@@ -142,7 +141,6 @@ namespace TerrainTower.TTower
             protected virtual void DeserializeData(BlobReader reader)
             {
                 reader.SetField(this, nameof(Buffer), GlobalOutputBuffer.Deserialize(reader));
-                reader.SetField(this, nameof(Product), reader.LoadedSaveVersion >= 2 ? Buffer.Product : reader.ReadGenericAs<ProductProto>());
                 SortedQuantity = Quantity.Deserialize(reader);
                 UnsortedQuantity = Quantity.Deserialize(reader);
                 reader.SetField(this, nameof(CanBeWasted), reader.ReadBool());
@@ -150,12 +148,12 @@ namespace TerrainTower.TTower
                 OutputPort = reader.ReadChar();
                 SortedThisMonth = Quantity.Deserialize(reader);
                 SortedLastMonth = Quantity.Deserialize(reader);
+                reader.SetField(this, nameof(Product), reader.LoadedSaveVersion >= 2 ? reader.ReadGenericAs<ProductProto>() : Buffer.Product);
             }
 
             protected virtual void SerializeData(BlobWriter writer)
             {
                 GlobalOutputBuffer.Serialize(Buffer, writer);
-                writer.WriteGeneric(Product);
                 Quantity.Serialize(SortedQuantity, writer);
                 Quantity.Serialize(UnsortedQuantity, writer);
                 writer.WriteBool(CanBeWasted);
@@ -163,6 +161,7 @@ namespace TerrainTower.TTower
                 writer.WriteChar(OutputPort);
                 Quantity.Serialize(SortedThisMonth, writer);
                 Quantity.Serialize(SortedLastMonth, writer);
+                writer.WriteGeneric(Product);
             }
 
             #endregion SERIALISATION

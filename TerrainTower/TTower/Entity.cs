@@ -39,7 +39,6 @@ namespace TerrainTower.TTower
     /// PushResultsToBuffer = Move from BeingSorted to Sorted
     /// Functions separated to allow paced sorted, and to prevent abuse of extremely fast mining.
     /// </summary>
-    [GenerateSerializer]
     public sealed partial class TerrainTowerEntity : LayoutEntity, IMaintainedEntity, IElectricityConsumingEntity, IEntityWithWorkers, IEntityWithPorts, IAreaManagingTower, IEntityWithBoost, IUnityConsumingEntity, IEntityWithSimUpdate
     {
         #region _STATIC CLASS INFO

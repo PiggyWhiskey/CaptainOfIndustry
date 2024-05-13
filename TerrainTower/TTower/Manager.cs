@@ -24,7 +24,6 @@ namespace TerrainTower.TTower
         /// <summary>
         /// Class used to set Product Port for Terrain Tower from User Input via UI
         /// </summary>
-        [GenerateSerializer(false, null, 0)]
         public class SetProductPortCmd : InputCommand
         {
             public readonly int PortIndex;
@@ -83,7 +82,6 @@ namespace TerrainTower.TTower
         /// <summary>
         /// Class used to set Blocked Product alert for Terrain Tower from User Input via UI
         /// </summary>
-        [GenerateSerializer(false, null, 0)]
         public class SortingPlantSetBlockedProductAlertCmd : InputCommand
         {
             public readonly bool IsAlertEnabled;
@@ -143,7 +141,6 @@ namespace TerrainTower.TTower
         /// <summary>
         /// Class used to toggle Terrain Tower Config from User Input via UI
         /// </summary>
-        [GenerateSerializer(false, null, 0)]
         public class TerrainTowerConfigToggleCmd : InputCommand
         {
             public readonly TerrainTowerEntity.TerrainTowerConfigState ConfigState;
@@ -200,7 +197,6 @@ namespace TerrainTower.TTower
     /// <summary>
     /// Manager is used to co-ordinate between all Terrain Towers with a common set of management in the form of Commands
     /// </summary>
-    [GenerateSerializer(false, null, 0)]
     [GlobalDependency(RegistrationMode.AsEverything, false, false)]
     internal class TerrainTowersManager :
         ICommandProcessor<TerrainTowerConfigToggleCmd>,
