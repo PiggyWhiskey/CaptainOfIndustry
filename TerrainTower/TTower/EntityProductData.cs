@@ -141,6 +141,7 @@ namespace TerrainTower.TTower
             protected virtual void DeserializeData(BlobReader reader)
             {
                 reader.SetField(this, nameof(Buffer), GlobalOutputBuffer.Deserialize(reader));
+                reader.SetField(this, nameof(Product), reader.LoadedSaveVersion >= 2 ? reader.ReadGenericAs<ProductProto>() : Buffer.Product);
                 SortedQuantity = Quantity.Deserialize(reader);
                 UnsortedQuantity = Quantity.Deserialize(reader);
                 reader.SetField(this, nameof(CanBeWasted), reader.ReadBool());
@@ -154,6 +155,7 @@ namespace TerrainTower.TTower
             protected virtual void SerializeData(BlobWriter writer)
             {
                 GlobalOutputBuffer.Serialize(Buffer, writer);
+                writer.WriteGeneric(Product);
                 Quantity.Serialize(SortedQuantity, writer);
                 Quantity.Serialize(UnsortedQuantity, writer);
                 writer.WriteBool(CanBeWasted);
