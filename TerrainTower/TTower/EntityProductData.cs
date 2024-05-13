@@ -27,7 +27,8 @@ namespace TerrainTower.TTower
             /// Bool Flag if the product can be affected by ConversionLoss
             /// </summary>
             public readonly bool CanBeWasted;
-
+            [NewInSaveVersion(2)]
+            public readonly ProductProto Product;
             private static readonly string[] s_defaultAlert = { "Rock", "Dirt" };
 
             private static readonly string[] s_lossSafeProducts = { "Rock", "Gravel", "Slag", "Dirt" };
@@ -36,15 +37,15 @@ namespace TerrainTower.TTower
             {
                 Buffer = buffer;
                 OutputPort = outputPort;
-                ProductProto product = buffer.Product;
+                Product = buffer.Product;
                 SortedLastMonth = Quantity.Zero;
                 SortedThisMonth = Quantity.Zero;
                 //Set defaults
                 //Rock/Gravel/Slag/Dirt cannot have conversion loss
                 //IsWaste cannot have conversion loss
                 //Automatically set FullOutput alert for Rock & Dirt
-                CanBeWasted = !product.IsWaste && !s_lossSafeProducts.Contains(product.Id.Value);
-                NotifyIfFullOutput = s_defaultAlert.Contains(product.Id.Value);
+                CanBeWasted = !Product.IsWaste && !s_lossSafeProducts.Contains(Product.Id.Value);
+                NotifyIfFullOutput = s_defaultAlert.Contains(Product.Id.Value);
             }
 
             /// <summary>
@@ -141,6 +142,7 @@ namespace TerrainTower.TTower
             protected virtual void DeserializeData(BlobReader reader)
             {
                 reader.SetField(this, nameof(Buffer), GlobalOutputBuffer.Deserialize(reader));
+                reader.SetField(this, nameof(Product), reader.LoadedSaveVersion >= 2 ? Buffer.Product : reader.ReadGenericAs<ProductProto>());
                 SortedQuantity = Quantity.Deserialize(reader);
                 UnsortedQuantity = Quantity.Deserialize(reader);
                 reader.SetField(this, nameof(CanBeWasted), reader.ReadBool());
@@ -153,6 +155,7 @@ namespace TerrainTower.TTower
             protected virtual void SerializeData(BlobWriter writer)
             {
                 GlobalOutputBuffer.Serialize(Buffer, writer);
+                writer.WriteGeneric(Product);
                 Quantity.Serialize(SortedQuantity, writer);
                 Quantity.Serialize(UnsortedQuantity, writer);
                 writer.WriteBool(CanBeWasted);

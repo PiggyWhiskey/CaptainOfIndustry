@@ -22,7 +22,6 @@ using Mafi.Core.Simulation;
 using Mafi.Core.Terrain;
 using Mafi.Core.Terrain.Designation;
 using Mafi.Core.Terrain.Props;
-using Mafi.Core.Terrain.Trees;
 using Mafi.Core.Utils;
 using Mafi.Serialization;
 
@@ -31,8 +30,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 using TerrainTower.Extras;
-
-using static Mafi.Base.Prototypes.Buildings.ThermalStorages.ThermalStorageProto;
 
 namespace TerrainTower.TTower
 {
@@ -578,7 +575,7 @@ namespace TerrainTower.TTower
         /// <returns>List of Products for an Output Port</returns>
         public ImmutableArray<ProductProto> GetPortProducts(IoPort port)
         {
-            return m_productsData.Values.Where(x => x.OutputPort == port.Name).Select(x => x.Buffer.Product).ToImmutableArray();
+            return m_productsData.Values.Where(x => x.OutputPort == port.Name).Select(x => x.Product).ToImmutableArray();
         }
 
         /// <summary>
@@ -750,7 +747,7 @@ namespace TerrainTower.TTower
             {
                 if (productData.UnsortedQuantity.IsPositive)
                 {
-                    result.Add(productData.Buffer.Product.WithQuantity(productData.UnsortedQuantity));
+                    result.Add(productData.Product.WithQuantity(productData.UnsortedQuantity));
                 }
             }
         }
@@ -796,7 +793,7 @@ namespace TerrainTower.TTower
             if (m_productsData.TryRemove(product, out TerrainTowerProductData plantProductData))
             {
                 m_outputBuffers.RemoveAndAssert(plantProductData.Buffer);
-                Context.ProductsManager.ProductDestroyed(plantProductData.Buffer.Product, plantProductData.SortedQuantity + plantProductData.UnsortedQuantity, DestroyReason.Cleared);
+                Context.ProductsManager.ProductDestroyed(plantProductData.Product, plantProductData.SortedQuantity + plantProductData.UnsortedQuantity, DestroyReason.Cleared);
                 Context.AssetTransactionManager.ClearAndDestroyBuffer(plantProductData.Buffer);
                 MixedTotal -= plantProductData.UnsortedQuantity;
                 updateMixedBufferNotifications();
@@ -1109,7 +1106,7 @@ namespace TerrainTower.TTower
                 if (productData.SortedQuantity.IsNotPositive) { continue; }
                 HasStoredToBuffer = true;
                 Quantity quantity = productData.MoveSortedQuantityToBuffer();
-                if (quantity.IsPositive) { m_productsManager.ProductCreated(productData.Buffer.Product, quantity, CreateReason.MinedFromTerrain); }
+                if (quantity.IsPositive) { m_productsManager.ProductCreated(productData.Product, quantity, CreateReason.MinedFromTerrain); }
                 if (productData.SortedQuantity.IsPositive) { m_sortedBufferIsPositive = true; }
             }
             //If Buffer has been added to, update Full Output Notifications
@@ -1343,7 +1340,7 @@ namespace TerrainTower.TTower
                         if (wasteQuantity.IsPositive)
                         {
                             //9. Destroy Waste
-                            Context.ProductsManager.ProductDestroyed(plantProductData.Buffer.Product, wasteQuantity, DestroyReason.Wasted);
+                            Context.ProductsManager.ProductDestroyed(plantProductData.Product, wasteQuantity, DestroyReason.Wasted);
 
                             //10. Remove Waste from SortedQuantity
                             plantProductData.SortedQuantity -= wasteQuantity;
