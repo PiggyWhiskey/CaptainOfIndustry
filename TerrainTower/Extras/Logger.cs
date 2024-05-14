@@ -8,37 +8,33 @@ namespace TerrainTower.Extras
     [GlobalDependency(RegistrationMode.AsSelf, false)]
     public static class Logger
     {
+        private static readonly string s_prefix = string.Format("[{0}] {1} ", Assembly.GetExecutingAssembly().GetName().Name, ++m_msgCount);
         private static int m_msgCount = 0;
-        private static readonly string s_prefix = string.Format("[{0}]", Assembly.GetExecutingAssembly().GetName().Name);
-        //[CallerMemberName] string callerName = null,
-        public static void Info(string message, params object[] args)
+
+        public static string AddPrefix(this string message) => $"{s_prefix}{message}";
+
+        public static void Error(object message) => log(message, Mafi.Log.Error);
+
+        public static void Exception(Exception e, object message) => log(e, message, Mafi.Log.Exception);
+
+        public static void Info(object message) => log(message, Mafi.Log.Info);
+
+        public static void InfoDebug(object message) => log(message, Mafi.Log.InfoDebug);
+
+        public static void Warning(object message) => log(message, Mafi.Log.Warning);
+
+        public static void WarningOnce(object message) => log(message, Mafi.Log.WarningOnce);
+
+        private static void log(object message, Action<string> callback = null)
         {
-            Log.Info($"{s_prefix} {++m_msgCount} {string.Format(message, args)}");
+            Console.WriteLine(message?.ToString().AddPrefix());
+            callback?.Invoke(message?.ToString().AddPrefix());
         }
 
-        public static void InfoDebug(string message, params object[] args)
+        private static void log(Exception e, object message, Action<Exception, string> callback = null)
         {
-            Log.InfoDebug($"{s_prefix} {++m_msgCount} {string.Format(message, args)}");
-        }
-
-        public static void Warning(string message, params object[] args)
-        {
-            Log.Warning($"{s_prefix} {++m_msgCount} {string.Format(message, args)}");
-        }
-
-        public static void WarningOnce(string message, params object[] args)
-        {
-            Log.WarningOnce($"{s_prefix} {++m_msgCount} {string.Format(message, args)}");
-        }
-
-        public static void Error(string message, params object[] args)
-        {
-            Log.Error($"{s_prefix} {++m_msgCount} {string.Format(message, args)}");
-        }
-
-        public static void Exception(Exception e, string message, params object[] args)
-        {
-            Log.Exception(e, $"{s_prefix} {++m_msgCount} {string.Format(message, args)}");
+            Console.WriteLine(message?.ToString().AddPrefix());
+            callback?.Invoke(e, message?.ToString().AddPrefix());
         }
     }
 }
