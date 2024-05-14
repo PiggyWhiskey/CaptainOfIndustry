@@ -212,7 +212,6 @@ namespace TerrainTower.TTower
         [InitAfterLoad(InitPriority.Low)]
         private void initSelf(int saveVersion)
         {
-
             Logger.Info("TerrainTowerEntity.initSelf");
 
             //Call Universal Init (Whether Construtor or Deserialisation)
@@ -657,7 +656,7 @@ namespace TerrainTower.TTower
 
             bool NoWork = CurrentState == State.Paused || CurrentState == State.Broken || CurrentState == State.MissingWorkers;
             bool CanTerrain = CurrentState == State.Working;
-            bool CanSort = CurrentState == State.Working || CurrentState == State.MissingDumpResource || CurrentState == State.MissingDesignation;
+            bool CanSort = CurrentState == State.Working || CurrentState == State.CantProcessTerrain || CurrentState == State.MissingDesignation;
             bool CanOutput = !NoWork;
 
             //Decrement Timers i.e. Actually count down Time (Not automatic)
@@ -720,8 +719,8 @@ namespace TerrainTower.TTower
         /// <param name="newArea">Area to Set</param>
         internal void EditManagedArea(RectangleTerrainArea2i newArea)
         {
-            RectangleTerrainArea2i oldArea = Area;
             removeAllManagedDesignations();
+            RectangleTerrainArea2i oldArea = Area;
             Tile2i origin = TerrainDesignation.GetOrigin(newArea.Origin);
             Tile2i tile2i = newArea.PlusXyCoordExcl;
             tile2i = tile2i.AddX(newArea.Size.X == 0 ? 0 : -1);
@@ -914,7 +913,7 @@ namespace TerrainTower.TTower
                 15,
                 this);
             TerrainTowerProductData productData = new TerrainTowerProductData(buffer, outputPort);
-            m_productsData.Add(buffer.Product, productData);
+            m_productsData.Add(productData.Product, productData);
             m_outputBuffers.Add(productData.Buffer);
         }
 
@@ -1003,11 +1002,11 @@ namespace TerrainTower.TTower
         /// <param name="designation">TerrainDesignation provided</param>
         private void onDesignationAdded(TerrainDesignation designation)
         {
-            if (designation.Prototype.IsTerraforming && isWithinArea(designation))
+            if (!designation.Prototype.IsTerraforming || !isWithinArea(designation)) { return; }
+
+            designation.AddManagingTower(this);
+            if (m_managedDesignations.Add(designation))
             {
-                designation.AddManagingTower(this);
-                m_managedDesignations.AddAndAssertNew(designation);
-                updateTerrainNotifications();
                 if (designation.IsMiningNotFulfilled)
                 {
                     m_unfulfilledMiningDesignations.AddAndAssertNew(designation);
@@ -1017,6 +1016,8 @@ namespace TerrainTower.TTower
                     m_unfulfilledDumpingDesignations.AddAndAssertNew(designation);
                 }
             }
+
+            updateTerrainNotifications();
         }
 
         /// <summary>
@@ -1025,17 +1026,22 @@ namespace TerrainTower.TTower
         /// <param name="designation">Designation that was changed</param>
         private void onDesignationFulfilledChanged(TerrainDesignation designation)
         {
-            if (designation.Prototype.IsTerraforming && m_managedDesignations.Contains(designation) && designation.Prototype.ShouldUpdateTowerNotificationOnFulfilledChanged)
+            if (!designation.Prototype.IsTerraforming || !isWithinArea(designation) || !designation.Prototype.ShouldUpdateTowerNotificationOnFulfilledChanged)
             {
-                Assert.AssertTrue(isWithinArea(designation));
-                updateTerrainNotifications();
+                return;
             }
 
-            if (designation.ProtoId == IdsCore.TerrainDesignators.MiningDesignator || designation.ProtoId == IdsCore.TerrainDesignators.LevelDesignator)
+            Assert.That(isWithinArea(designation)).IsTrue("designation not within Area");
+
+            updateTerrainNotifications();
+
+            Proto.ID protId = designation.ProtoId;
+
+            if (protId == IdsCore.TerrainDesignators.MiningDesignator || protId == IdsCore.TerrainDesignators.LevelDesignator)
             {
                 if (designation.IsMiningFulfilled)
                 {
-                    if (m_unfulfilledMiningDesignations.Contains(designation) && !m_unfulfilledMiningDesignations.Remove(designation))
+                    if (!m_unfulfilledMiningDesignations.Remove(designation))
                     {
                         Logger.Warning("{0} Designation was not in unfulfilled mining designations", nameof(onDesignationFulfilledChanged));
                     }
@@ -1047,11 +1053,11 @@ namespace TerrainTower.TTower
                 }
             }
 
-            if (designation.ProtoId == IdsCore.TerrainDesignators.DumpingDesignator || designation.ProtoId == IdsCore.TerrainDesignators.LevelDesignator)
+            if (protId == IdsCore.TerrainDesignators.DumpingDesignator || protId == IdsCore.TerrainDesignators.LevelDesignator)
             {
                 if (designation.IsDumpingFulfilled)
                 {
-                    if (m_unfulfilledMiningDesignations.Contains(designation) && !m_unfulfilledDumpingDesignations.Remove(designation))
+                    if (!m_unfulfilledDumpingDesignations.Remove(designation))
                     {
                         Logger.Warning("{0} Designation was not in unfulfilled dumping designations", nameof(onDesignationFulfilledChanged));
                     }
@@ -1070,18 +1076,23 @@ namespace TerrainTower.TTower
         /// <param name="designation">TerrainDesignation provided</param>
         private void onDesignationRemoved(TerrainDesignation designation)
         {
-            if (designation.Prototype.IsTerraforming && m_managedDesignations.Remove(designation))
+            if (!designation.Prototype.IsTerraforming || !isWithinArea(designation))
             {
-                if (designation.Equals(m_tmpMineDesignation)) { m_tmpMineDesignation = null; }
-                if (designation.Equals(m_tmpDumpDesignation)) { m_tmpDumpDesignation = null; }
-
-                m_unfulfilledMiningDesignations.Remove(designation);
-                m_unfulfilledDumpingDesignations.Remove(designation);
-
-                Assert.AssertTrue(isWithinArea(designation));
-                designation.RemoveManagingTower(this);
-                updateTerrainNotifications();
+                return;
             }
+
+            Assert.That(isWithinArea(designation)).IsTrue("designation not within Area");
+
+            designation.RemoveManagingTower(this);
+            m_managedDesignations.Remove(designation);
+
+            m_unfulfilledMiningDesignations.Remove(designation);
+            m_unfulfilledDumpingDesignations.Remove(designation);
+
+            if (designation.Equals(m_tmpMineDesignation)) { m_tmpMineDesignation = null; }
+            if (designation.Equals(m_tmpDumpDesignation)) { m_tmpDumpDesignation = null; }
+
+            updateTerrainNotifications();
         }
 
         /// <summary>
@@ -1117,11 +1128,36 @@ namespace TerrainTower.TTower
         /// </summary>
         private void removeAllManagedDesignations()
         {
+            //Try to be more efficient by removing all at once
+            //We don't need to check if if it's a Terraforming Designation, or that it's within the Area, as they're filtered when added
+#if false
+            //Have to loop to RemoveManagingTower(this)
             foreach (TerrainDesignation designation in m_managedDesignations.ToArray())
             {
                 onDesignationRemoved(designation);
             }
-            Assert.AssertTrue(m_managedDesignations.IsEmpty);
+#else
+            m_managedDesignations.ForEach(x => x.RemoveManagingTower(this));
+
+            //Fully clear remaining designations from unfulfilled cached list.
+            m_managedDesignations.Clear();
+            m_managedDesignations.TrimExcess();
+
+            m_unfulfilledMiningDesignations.Clear();
+            m_unfulfilledMiningDesignations.TrimExcess();
+
+            m_unfulfilledDumpingDesignations.Clear();
+            m_unfulfilledDumpingDesignations.TrimExcess();
+
+            m_tmpMineDesignation = null;
+
+            m_tmpDumpDesignation = null;
+#endif
+            Assert.That(m_managedDesignations).IsEmpty("ManagedDesignations not Empty");
+            Assert.That(m_unfulfilledMiningDesignations).IsEmpty("UnfulfilledMiningDesignation not Empty");
+            Assert.That(m_unfulfilledDumpingDesignations).IsEmpty("UnfulfilledDumpingDesignation not Empty");
+            Assert.That(m_tmpMineDesignation).IsNull("tmpMineDesignation is not null");
+            Assert.That(m_tmpDumpDesignation).IsNull("tmpDumpDesignation is not null");
         }
 
         /// <summary>
@@ -1265,15 +1301,25 @@ namespace TerrainTower.TTower
 
             if (IsMissingDesignation) { return State.MissingDesignation; }
 
-            //FUTURE: Could be removed and just flagged as a Notification, rather than a full status.
-            if (TerrainConfigState == TerrainTowerConfigState.Dumping && DumpTotal.IsZero)
+            if (TerrainConfigState == TerrainTowerConfigState.Mining
+                && (!HasUnfulfilledMining || MixedCapacityLeft == Quantity.Zero))
             {
-                //Only set MissingDumpResource if we are in Dumping Mode (Not Flatten/Mining)
-                return State.MissingDumpResource;
+                return State.CantProcessTerrain;
+            }
+            else if (TerrainConfigState == TerrainTowerConfigState.Dumping
+                && (!HasUnfulfilledDumping || DumpTotal.IsZero))
+            {
+                return State.CantProcessTerrain;
+            }
+            else if (TerrainConfigState == TerrainTowerConfigState.Flatten
+                && (!HasUnfulfilledMining || MixedCapacityLeft == Quantity.Zero)
+                && (!HasUnfulfilledDumping || DumpTotal.IsZero))
+            {
+                return State.CantProcessTerrain;
             }
 
             //We have Workers, Power, and are Enabled
-            //We are not Missing Designation, or Dump Resource (if Dumping only)
+            //We are not Missing Designation, and can Process Terrain actions
             return State.Working;
         }
 
@@ -1361,7 +1407,6 @@ namespace TerrainTower.TTower
         /// <returns>TRUE if any dumping occured</returns>
         private bool tryDumpDesignation(TerrainDesignation designation, Quantity maxDumpQuantity)
         {
-
             if (designation == null || designation.IsDumpingFulfilled || maxDumpQuantity.IsNotPositive || DumpTotal.IsNotPositive)
             {
                 //Logger.InfoDebug("tryDumpDesignation: IsDumpingFulfilled {0} - maxDumpQuantity {1} - DumpTotal {2}", designation.IsDumpingFulfilled, maxDumpQuantity, DumpTotal);
@@ -1455,7 +1500,11 @@ namespace TerrainTower.TTower
                 //Invalid Designation, already fulfilled, or no quantity to min
                 return false;
             }
-
+            if (!Area.ContainsTile(designation.OriginTileCoord))
+            {
+                //Should not be possible
+                Logger.Warning("{0} Designation is outside of Tower Area", Context.EntitiesManager.GetEntity(this.Id).ToString());
+            }
             bool hasMined = false;
 
             for (int i = 0; i <= designation.SizeTiles; i++)
@@ -1625,7 +1674,7 @@ namespace TerrainTower.TTower
             Paused,
             Broken,
             MissingWorkers,
-            MissingDumpResource,
+            CantProcessTerrain,
             NotEnoughPower,
             MissingDesignation,
             Working
