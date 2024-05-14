@@ -126,8 +126,8 @@ namespace TerrainTower.TTower
                             statusInfo.SetStatus("Broken", StatusPanel.State.Critical);
                             break;
 
-                        case TerrainTowerEntity.State.MissingDumpResource:
-                            statusInfo.SetStatus("Missing Dump Resource", StatusPanel.State.Warning);
+                        case TerrainTowerEntity.State.CantProcessTerrain:
+                            statusInfo.SetStatus("Can't process Terrain", StatusPanel.State.Warning);
                             break;
 
                         case TerrainTowerEntity.State.MissingDesignation:

@@ -1043,7 +1043,8 @@ namespace TerrainTower.TTower
                 {
                     if (!m_unfulfilledMiningDesignations.Remove(designation))
                     {
-                        Logger.Warning("{0} Designation was not in unfulfilled mining designations", nameof(onDesignationFulfilledChanged));
+                        //We can enter here if a Level Designation is used for Dumping. As Mining is already fulfilled, it was never added to unfulfilledMiningDesignations
+                        //Logger.Warning("{0} Designation was not in unfulfilled mining designations", nameof(onDesignationFulfilledChanged));
                     }
                 }
                 else
@@ -1059,7 +1060,8 @@ namespace TerrainTower.TTower
                 {
                     if (!m_unfulfilledDumpingDesignations.Remove(designation))
                     {
-                        Logger.Warning("{0} Designation was not in unfulfilled dumping designations", nameof(onDesignationFulfilledChanged));
+                        //We can enter here if a Level Designation is used for Mining. As Dumping is already fulfilled, it was never added to unfulfilledDumpingDesignations
+                        //Logger.Warning("{0} Designation was not in unfulfilled dumping designations", nameof(onDesignationFulfilledChanged));
                     }
                 }
                 else
@@ -1629,7 +1631,8 @@ namespace TerrainTower.TTower
 
         private void updateMixedBufferNotifications()
         {
-            m_inputBlockedNotif.NotifyIff(IsEnabled && MixedTotal >= (Capacity - MAX_MINE_QUANTITY), this);
+            // BUGFIX: Disable, allow user to set alerts via output full flags.
+            //m_inputBlockedNotif.NotifyIff(IsEnabled && MixedTotal >= (Capacity - MAX_MINE_QUANTITY), this);
         }
 
         /// <summary>
