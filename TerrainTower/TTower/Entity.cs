@@ -193,7 +193,6 @@ namespace TerrainTower.TTower
         /// </summary>
         private void initData()
         {
-            Logger.Info("TerrainTowerEntity.initData");
             //Set Capacity
             Capacity = Prototype.BufferCapacity;
 
@@ -212,8 +211,6 @@ namespace TerrainTower.TTower
         [InitAfterLoad(InitPriority.Low)]
         private void initSelf(int saveVersion)
         {
-            Logger.Info("TerrainTowerEntity.initSelf");
-
             //Call Universal Init (Whether Construtor or Deserialisation)
             initData();
 
@@ -564,6 +561,10 @@ namespace TerrainTower.TTower
                     || (TerrainConfigState == TerrainTowerConfigState.Flatten && !HasUnfulfilledDumping && !HasUnfulfilledMining);
             }
         }
+
+        private bool ValidateDumping => !HasUnfulfilledDumping || DumpTotal.IsZero;
+
+        private bool ValidateMining => !HasUnfulfilledMining || MixedCapacityLeft == Quantity.Zero;
 
         /// <summary>
         /// Gets all Products from <see cref="m_productsData"/> for a particular port
@@ -940,55 +941,258 @@ namespace TerrainTower.TTower
         }
 
         /// <summary>
-        /// Clear any Custom Surfaces from a tileAndIndex if it is above the targetHeight
+        /// Called on New Month to reset <see cref="TerrainTowerProductData"/> monthly values
         /// </summary>
-        /// <param name="tileAndIndex">Tile to search</param>
-        /// <param name="targetHeight">Height to check for</param>
-        private void clearCustomSurface(Tile2iAndIndex tileAndIndex, HeightTilesF targetHeight)
+        private void onNewMonth()
         {
-            if (ContextTerrainManager.TryGetTileSurface(tileAndIndex.Index, out TileSurfaceData tileSurfaceData))
-            {
-                if (!tileSurfaceData.IsAutoPlaced && tileSurfaceData.Height > targetHeight)
-                {
-                    ContextTerrainManager.ClearCustomSurface(tileAndIndex);
-                }
-            }
+            foreach (TerrainTowerProductData productData in m_productsData.Values) { productData.OnNewMonth(); }
         }
 
-        //TODO: Test if working
         /// <summary>
-        /// Remove props from a tile (Bushes etc)
-        /// - Taken from MiningJob.handleMining()
+        /// Move residual products from <see cref="TerrainTowerProductData.SortedQuantity"/> to <see cref="TerrainTowerProductData.Buffer"/>
         /// </summary>
-        /// <param name="tile">Tile2i of location</param>
-        private void clearProps(Tile2i tile)
+        private void pushSortedToBuffers()
         {
-            TerrainPropsManager tpm = m_designationManager.TerrainPropsManager;
-
-            m_designationManager.TreesManager.RemoveStumpAtTile(tile);
-            if (tpm.TerrainTileToProp.TryGetValue(tile.AsSlim, out TerrainPropId key))
+            m_sortedBufferIsPositive = false;
+            bool HasStoredToBuffer = false;
+            Assert.AssertTrue(m_productsData != null);
+            foreach (TerrainTowerProductData productData in m_productsData.Values)
             {
-                if (!tpm.TerrainProps.TryGetValue(key, out TerrainPropData propData))
+                if (productData.SortedQuantity.IsNotPositive) { continue; }
+                HasStoredToBuffer = true;
+                Quantity quantity = productData.MoveSortedQuantityToBuffer();
+                if (quantity.IsPositive) { m_productsManager.ProductCreated(productData.Product, quantity, CreateReason.MinedFromTerrain); }
+                if (productData.SortedQuantity.IsPositive) { m_sortedBufferIsPositive = true; }
+            }
+            //If Buffer has been added to, update Full Output Notifications
+            if (HasStoredToBuffer) { updateFullOutputNotifications(); }
+        }
+
+        /// <summary>
+        /// Loop through all <see cref="LayoutEntity.ConnectedOutputPorts"/> and send matching products to the configured <see cref="TerrainTowerProductData.OutputPort"/>
+        /// </summary>
+        private void sendOutputs()
+        {
+            foreach (IoPortData oPort in ConnectedOutputPorts)
+            {
+                foreach (TerrainTowerProductData productData in m_productsData.Values)
                 {
-                    Logger.Warning("clearProps: PropData not found for {0}", key);
-                }
-                else if (!tpm.TryRemovePropAtTile(tile, false))
-                {
-                    Logger.Warning("clearProps: Failed to remove prop {0}", key);
-                }
-                else
-                {
-                    if (propData.Proto.ProductWhenHarvested.IsNotEmpty)
+                    if (productData.OutputPort == oPort.Name)
                     {
-                        //Send Prop product to shipyard
-                        ProductQuantity pq = propData.Proto.ProductWhenHarvested.ScaledBy(propData.Scale);
-                        m_productsManager.ProductCreated(pq.Product, pq.Quantity, CreateReason.MinedFromTerrain);
-                        Context.AssetTransactionManager.StoreClearedProduct(pq);
+                        GlobalOutputBuffer buffer = productData.Buffer;
+                        Quantity bufferQuantity = buffer.Quantity;
+                        Quantity sentQuantity = bufferQuantity - oPort.SendAsMuchAs(buffer.Product.WithQuantity(bufferQuantity));
+                        if (sentQuantity.IsPositive)
+                        {
+                            buffer.RemoveExactly(sentQuantity);
+                            break;
+                        }
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// Called from <see cref="IEntityWithSimUpdate.SimUpdate"/>
+        /// - Tries to Sort Products and Push to Buffer
+        /// - If 'Finished' but no Sorting, don't re-start Timer to allow instant sorting next attempt.
+        /// </summary>
+        /// <returns>TRUE if Sorting Occured</returns>
+        private bool simStepSorting()
+        {
+            //Sorted Products (Between Mining/Buffer) are Positive = Push to Buffer (Left over from last Timer.IsFinished)
+            if (m_sortedBufferIsPositive) { pushSortedToBuffers(); }
+
+            //We only sort if the Timer is Finished (Unsorted -> Sorted)
+            if (m_sortingTimer.IsFinished)
+            {
+                if (sortProducts())
+                {
+                    //Products have been sorted, start the Timer
+                    m_sortingTimer.Start(Prototype.SortDuration);
+                    //Products have been sorted, push to Buffer (For output)
+                    pushSortedToBuffers();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get the current State of the Tower based on current conditions
+        /// </summary>
+        /// <returns><see cref="State"/> to be assigned to <see cref="CurrentState"/></returns>
+        private State simStepUpdateState()
+        {
+            //Not Enabled = No SimUpdate
+            if (IsNotEnabled) { return !Maintenance.Status.IsBroken ? State.Paused : State.Broken; }
+
+            //No Workers = No SimUpdate
+            if (IsMissingWorkers(this)) { return State.MissingWorkers; }
+
+            //No Electricity = No SimUpdate
+            if (!m_electricityConsumer.CanConsume()) { return State.NotEnoughPower; }
+
+            if (IsMissingDesignation) { return State.MissingDesignation; }
+
+            if (TerrainConfigState == TerrainTowerConfigState.Mining && ValidateMining)
+            {
+                return State.CantProcessTerrain;
+            }
+            else if (TerrainConfigState == TerrainTowerConfigState.Dumping && ValidateDumping)
+            {
+                return State.CantProcessTerrain;
+            }
+            else if (TerrainConfigState == TerrainTowerConfigState.Flatten && ValidateMining && ValidateDumping)
+            {
+                return State.CantProcessTerrain;
+            }
+
+            //We have Workers, Power, and are Enabled
+            //We are not Missing Designation, and can Process Terrain actions
+            return State.Working;
+        }
+
+        /// <summary>
+        /// Process Unsorted Products to Sorted Products and conduct Waste/Conversion Loss for configured products
+        /// - Only sort if the 'Sorted Quantity' is Zero
+        /// </summary>
+        /// <returns>TRUE if any products were Sorted</returns>
+        private bool sortProducts()
+        {
+            //Nothing to Sort
+            if (MixedTotal.IsNotPositive) { return false; }
+
+            Quantity sortedPerDuration = SortQuantityPerDuration;
+
+            //Running subtotal of items sorted this round
+            Quantity quantitySortedRunningTotal = Quantity.Zero;
+
+            //Summary: Total products availble to be sorted
+            Quantity quantityToSortTotal = Quantity.Zero;
+
+            quantityToSortTotal = m_productsData.Values.Where(p => !p.SortedQuantity.IsPositive).Sum(p => p.UnsortedQuantity.Value).Quantity();
+
+            foreach (TerrainTowerProductData plantProductData in m_productsData.Values)
+            {
+                //If we have sorted all we can, break
+                if ((quantitySortedRunningTotal >= sortedPerDuration))
+                {
+                    break;
+                }
+
+                //Quantity bufferQuantity = plantProductData.SortedQuantity; added to next IF statement
+                if (plantProductData.SortedQuantity.IsNotPositive && plantProductData.UnsortedQuantity.IsPositive)
+                {
+                    Quantity tmpUnsortedQuantity = plantProductData.UnsortedQuantity;
+
+                    //1. Scale UnsortedQuantity to even ratios with other products
+                    tmpUnsortedQuantity = (plantProductData.UnsortedQuantity.Value / quantityToSortTotal.Value.ToFix32() * sortedPerDuration.Value).ToIntCeiled().Quantity();
+
+                    tmpUnsortedQuantity = tmpUnsortedQuantity
+                    //2. Min UnsortedQuantity to ensure it doesn't exceed actually available UnsortedQuantity
+                        .Min(plantProductData.UnsortedQuantity)
+                    //3. Cap to Sorted Products running total remaining value to ensure we're not sorting more than allowed - (Due to rounding, last product looped may have a 1/2 quantity skipped)
+                        .Min(sortedPerDuration - quantitySortedRunningTotal);
+
+                    //4. Move from Unsorted to Sorted buffers
+                    plantProductData.SortQuantity(tmpUnsortedQuantity);
+
+                    //5. Remove sorted value from mixed buffer - Enumerator prevention
+                    MixedTotal -= tmpUnsortedQuantity;
+                    updateMixedBufferNotifications();
+
+                    //6. Rolling total of values sorted - after full loop = SortedPerDuration
+                    quantitySortedRunningTotal += tmpUnsortedQuantity;
+
+                    if (plantProductData.CanBeWasted)
+                    {
+                        //7. Add Conversion Loss to 'ToWaste' PartialQuantity buffer
+                        plantProductData.ToWaste += tmpUnsortedQuantity.AsPartial.ScaledBy(Prototype.ConversionLoss);
+
+                        //8. Round ToWaste PartialQuantity down to nearest whole number
+                        Quantity wasteQuantity = plantProductData.ToWaste.IntegerPart.Min(plantProductData.SortedQuantity);
+                        if (wasteQuantity.IsPositive)
+                        {
+                            //9. Destroy Waste
+                            Context.ProductsManager.ProductDestroyed(plantProductData.Product, wasteQuantity, DestroyReason.Wasted);
+
+                            //10. Remove Waste from SortedQuantity
+                            plantProductData.SortedQuantity -= wasteQuantity;
+
+                            //11. Remove ConversionLoss from 'ToWaste' should be between 0.00 and 0.99
+                            plantProductData.ToWaste -= wasteQuantity.AsPartial;
+                        }
+                    }
+                }
+            }
+            return quantitySortedRunningTotal.IsPositive;
+        }
+
+        private void updateFullOutputNotifications()
+        {
+            //Blocked Output notification - even when not working
+            bool shouldNotify = false;
+            if (IsEnabled && m_sortedBufferIsPositive)
+            {
+                foreach (TerrainTowerProductData productData in m_productsData.Values)
+                {
+                    if (productData.NotifyIfFullOutput && productData.Buffer.IsFull)
+                    {
+                        shouldNotify = true;
+                        break;
+                    }
+                }
+            }
+            m_outputBlockedNotif.NotifyIff(shouldNotify, this);
+        }
+
+        private void updateMixedBufferNotifications()
+        {
+            // BUGFIX: Disable, allow user to set alerts via output full flags.
+            //m_inputBlockedNotif.NotifyIff(IsEnabled && MixedTotal >= (Capacity - MAX_MINE_QUANTITY), this);
+        }
+
+        /// <summary>
+        /// Update the Mixed Quantity from all <see cref="m_productsData"/>
+        /// </summary>
+        private void updateMixedQuantity()
+        {
+            Quantity val = Quantity.Zero;
+            foreach (TerrainTowerProductData productData in m_productsData.Values)
+            {
+                val += productData.UnsortedQuantity;
+            }
+            MixedTotal = val;
+            updateMixedBufferNotifications();
+        }
+
+        /// <summary>
+        /// Activate/Deactivate Notifications. Trigged on Add/Remove/Fulfilled <see cref="ManagedDesignations"/>
+        /// </summary>
+        private void updateTerrainNotifications()
+        {
+            //Set unfulfilled flags
+            HasUnfulfilledMining = m_managedDesignations.Any(desig => desig.IsMiningNotFulfilled);
+            HasUnfulfilledDumping = m_managedDesignations.Any(desig => desig.IsDumpingNotFulfilled);
+
+            //Update Notifications, if Flag is Set && has NotFulfilled Designations
+            m_missingMiningDesignationNotif.NotifyIff(TerrainConfigState.HasFlag(TerrainTowerConfigState.Mining)
+                && !HasUnfulfilledMining, this);
+            m_missingDumpingDesignationNotif.NotifyIff(TerrainConfigState.HasFlag(TerrainTowerConfigState.Dumping)
+                && !HasUnfulfilledDumping, this);
+
+            //If Dumping, must have > 0 Quantity. Alternative option: must have at least MAX_DUMP_QUANTITY in a buffer
+            //TODO: Remove? - It's set within dumpDesignation which has far more validation/checks, just in case the tower is set to Flatten, but we don't actually have any Dump Designations.
+            //m_missingDumpItemNotif.NotifyIff(TerrainConfigState.HasFlag(TerrainTowerConfigState.Dumping) && DumpTotal.IsZero, this);
+        }
+    }
+
+    /// <summary>
+    /// Terrain Designation Management
+    /// </summary>
+    public sealed partial class TerrainTowerEntity
+    {
         /// <summary>
         /// Validate if a Designation is within the Tower Area
         /// </summary>
@@ -1007,11 +1211,15 @@ namespace TerrainTower.TTower
             designation.AddManagingTower(this);
             if (m_managedDesignations.Add(designation))
             {
-                if (designation.IsMiningNotFulfilled)
+                if ((designation.ProtoId == IdsCore.TerrainDesignators.MiningDesignator
+                        || designation.ProtoId == IdsCore.TerrainDesignators.LevelDesignator)
+                    && designation.IsMiningNotFulfilled)
                 {
                     m_unfulfilledMiningDesignations.AddAndAssertNew(designation);
                 }
-                if (designation.IsDumpingNotFulfilled)
+                if ((designation.ProtoId == IdsCore.TerrainDesignators.DumpingDesignator
+                        || designation.ProtoId == IdsCore.TerrainDesignators.LevelDesignator)
+                    && designation.IsDumpingNotFulfilled)
                 {
                     m_unfulfilledDumpingDesignations.AddAndAssertNew(designation);
                 }
@@ -1098,34 +1306,6 @@ namespace TerrainTower.TTower
         }
 
         /// <summary>
-        /// Called on New Month to reset <see cref="TerrainTowerProductData"/> monthly values
-        /// </summary>
-        private void onNewMonth()
-        {
-            foreach (TerrainTowerProductData productData in m_productsData.Values) { productData.OnNewMonth(); }
-        }
-
-        /// <summary>
-        /// Move residual products from <see cref="TerrainTowerProductData.SortedQuantity"/> to <see cref="TerrainTowerProductData.Buffer"/>
-        /// </summary>
-        private void pushSortedToBuffers()
-        {
-            m_sortedBufferIsPositive = false;
-            bool HasStoredToBuffer = false;
-            Assert.AssertTrue(m_productsData != null);
-            foreach (TerrainTowerProductData productData in m_productsData.Values)
-            {
-                if (productData.SortedQuantity.IsNotPositive) { continue; }
-                HasStoredToBuffer = true;
-                Quantity quantity = productData.MoveSortedQuantityToBuffer();
-                if (quantity.IsPositive) { m_productsManager.ProductCreated(productData.Product, quantity, CreateReason.MinedFromTerrain); }
-                if (productData.SortedQuantity.IsPositive) { m_sortedBufferIsPositive = true; }
-            }
-            //If Buffer has been added to, update Full Output Notifications
-            if (HasStoredToBuffer) { updateFullOutputNotifications(); }
-        }
-
-        /// <summary>
         /// Clear all designations from <see cref="m_managedDesignations"/> controlled via <see cref="onDesignationRemoved"/>
         /// </summary>
         private void removeAllManagedDesignations()
@@ -1161,55 +1341,60 @@ namespace TerrainTower.TTower
             Assert.That(m_tmpMineDesignation).IsNull("tmpMineDesignation is not null");
             Assert.That(m_tmpDumpDesignation).IsNull("tmpDumpDesignation is not null");
         }
+    }
 
+    /// <summary>
+    /// Terrain Manipulation
+    /// </summary>
+    public sealed partial class TerrainTowerEntity
+    {
         /// <summary>
-        /// Loop through all <see cref="LayoutEntity.ConnectedOutputPorts"/> and send matching products to the configured <see cref="TerrainTowerProductData.OutputPort"/>
+        /// Clear any Custom Surfaces from a tileAndIndex if it is above the targetHeight
         /// </summary>
-        private void sendOutputs()
+        /// <param name="tileAndIndex">Tile to search</param>
+        /// <param name="targetHeight">Height to check for</param>
+        private void clearCustomSurface(Tile2iAndIndex tileAndIndex, HeightTilesF targetHeight)
         {
-            foreach (IoPortData oPort in ConnectedOutputPorts)
+            if (ContextTerrainManager.TryGetTileSurface(tileAndIndex.Index, out TileSurfaceData tileSurfaceData))
             {
-                foreach (TerrainTowerProductData productData in m_productsData.Values)
+                if (!tileSurfaceData.IsAutoPlaced && tileSurfaceData.Height > targetHeight)
                 {
-                    if (productData.OutputPort == oPort.Name)
-                    {
-                        GlobalOutputBuffer buffer = productData.Buffer;
-                        Quantity bufferQuantity = buffer.Quantity;
-                        Quantity sentQuantity = bufferQuantity - oPort.SendAsMuchAs(buffer.Product.WithQuantity(bufferQuantity));
-                        if (sentQuantity.IsPositive)
-                        {
-                            buffer.RemoveExactly(sentQuantity);
-                            break;
-                        }
-                    }
+                    ContextTerrainManager.ClearCustomSurface(tileAndIndex);
                 }
             }
         }
 
         /// <summary>
-        /// Called from <see cref="IEntityWithSimUpdate.SimUpdate"/>
-        /// - Tries to Sort Products and Push to Buffer
-        /// - If 'Finished' but no Sorting, don't re-start Timer to allow instant sorting next attempt.
+        /// Remove props from a tile (Bushes etc)
+        /// - Taken from MiningJob.handleMining()
         /// </summary>
-        /// <returns>TRUE if Sorting Occured</returns>
-        private bool simStepSorting()
+        /// <param name="tile">Tile2i of location</param>
+        private void clearProps(Tile2i tile)
         {
-            //Sorted Products (Between Mining/Buffer) are Positive = Push to Buffer (Left over from last Timer.IsFinished)
-            if (m_sortedBufferIsPositive) { pushSortedToBuffers(); }
+            TerrainPropsManager tpm = m_designationManager.TerrainPropsManager;
 
-            //We only sort if the Timer is Finished (Unsorted -> Sorted)
-            if (m_sortingTimer.IsFinished)
+            m_designationManager.TreesManager.RemoveStumpAtTile(tile);
+            if (tpm.TerrainTileToProp.TryGetValue(tile.AsSlim, out TerrainPropId key))
             {
-                if (sortProducts())
+                if (!tpm.TerrainProps.TryGetValue(key, out TerrainPropData propData))
                 {
-                    //Products have been sorted, start the Timer
-                    m_sortingTimer.Start(Prototype.SortDuration);
-                    //Products have been sorted, push to Buffer (For output)
-                    pushSortedToBuffers();
-                    return true;
+                    Logger.Warning("clearProps: PropData not found for {0}", key);
+                }
+                else if (!tpm.TryRemovePropAtTile(tile, false))
+                {
+                    Logger.Warning("clearProps: Failed to remove prop {0}", key);
+                }
+                else
+                {
+                    if (propData.Proto.ProductWhenHarvested.IsNotEmpty)
+                    {
+                        //Send Prop product to shipyard
+                        ProductQuantity pq = propData.Proto.ProductWhenHarvested.ScaledBy(propData.Scale);
+                        m_productsManager.ProductCreated(pq.Product, pq.Quantity, CreateReason.MinedFromTerrain);
+                        Context.AssetTransactionManager.StoreClearedProduct(pq);
+                    }
                 }
             }
-            return false;
         }
 
         /// <summary>
@@ -1284,121 +1469,6 @@ namespace TerrainTower.TTower
                 }
                 return m_tmpDumpDesignation != null && m_tmpDumpDesignation.IsDumpingNotFulfilled;
             }
-        }
-
-        /// <summary>
-        /// Get the current State of the Tower based on current conditions
-        /// </summary>
-        /// <returns><see cref="State"/> to be assigned to <see cref="CurrentState"/></returns>
-        private State simStepUpdateState()
-        {
-            //Not Enabled = No SimUpdate
-            if (IsNotEnabled) { return !Maintenance.Status.IsBroken ? State.Paused : State.Broken; }
-
-            //No Workers = No SimUpdate
-            if (IsMissingWorkers(this)) { return State.MissingWorkers; }
-
-            //No Electricity = No SimUpdate
-            if (!m_electricityConsumer.CanConsume()) { return State.NotEnoughPower; }
-
-            if (IsMissingDesignation) { return State.MissingDesignation; }
-
-            if (TerrainConfigState == TerrainTowerConfigState.Mining
-                && (!HasUnfulfilledMining || MixedCapacityLeft == Quantity.Zero))
-            {
-                return State.CantProcessTerrain;
-            }
-            else if (TerrainConfigState == TerrainTowerConfigState.Dumping
-                && (!HasUnfulfilledDumping || DumpTotal.IsZero))
-            {
-                return State.CantProcessTerrain;
-            }
-            else if (TerrainConfigState == TerrainTowerConfigState.Flatten
-                && (!HasUnfulfilledMining || MixedCapacityLeft == Quantity.Zero)
-                && (!HasUnfulfilledDumping || DumpTotal.IsZero))
-            {
-                return State.CantProcessTerrain;
-            }
-
-            //We have Workers, Power, and are Enabled
-            //We are not Missing Designation, and can Process Terrain actions
-            return State.Working;
-        }
-
-        /// <summary>
-        /// Process Unsorted Products to Sorted Products and conduct Waste/Conversion Loss for configured products
-        /// - Only sort if the 'Sorted Quantity' is Zero
-        /// </summary>
-        /// <returns>TRUE if any products were Sorted</returns>
-        private bool sortProducts()
-        {
-            //Nothing to Sort
-            if (MixedTotal.IsNotPositive) { return false; }
-
-            Quantity sortedPerDuration = SortQuantityPerDuration;
-
-            //Running subtotal of items sorted this round
-            Quantity quantitySortedRunningTotal = Quantity.Zero;
-
-            //Summary: Total products availble to be sorted
-            Quantity quantityToSortTotal = Quantity.Zero;
-
-            quantityToSortTotal = m_productsData.Values.Where(p => !p.SortedQuantity.IsPositive).Sum(p => p.UnsortedQuantity.Value).Quantity();
-
-            foreach (TerrainTowerProductData plantProductData in m_productsData.Values)
-            {
-                //If we have sorted all we can, break
-                if ((quantitySortedRunningTotal >= sortedPerDuration))
-                {
-                    break;
-                }
-
-                //Quantity bufferQuantity = plantProductData.SortedQuantity; added to next IF statement
-                if (plantProductData.SortedQuantity.IsNotPositive && plantProductData.UnsortedQuantity.IsPositive)
-                {
-                    Quantity tmpUnsortedQuantity = plantProductData.UnsortedQuantity;
-
-                    //1. Scale UnsortedQuantity to even ratios with other products
-                    tmpUnsortedQuantity = (plantProductData.UnsortedQuantity.Value / quantityToSortTotal.Value.ToFix32() * sortedPerDuration.Value).ToIntCeiled().Quantity();
-
-                    tmpUnsortedQuantity = tmpUnsortedQuantity
-                    //2. Min UnsortedQuantity to ensure it doesn't exceed actually available UnsortedQuantity
-                        .Min(plantProductData.UnsortedQuantity)
-                    //3. Cap to Sorted Products running total remaining value to ensure we're not sorting more than allowed - (Due to rounding, last product looped may have a 1/2 quantity skipped)
-                        .Min(sortedPerDuration - quantitySortedRunningTotal);
-
-                    //4. Move from Unsorted to Sorted buffers
-                    plantProductData.SortQuantity(tmpUnsortedQuantity);
-
-                    //5. Remove sorted value from mixed buffer - Enumerator prevention
-                    MixedTotal -= tmpUnsortedQuantity;
-                    updateMixedBufferNotifications();
-
-                    //6. Rolling total of values sorted - after full loop = SortedPerDuration
-                    quantitySortedRunningTotal += tmpUnsortedQuantity;
-
-                    if (plantProductData.CanBeWasted)
-                    {
-                        //7. Add Conversion Loss to 'ToWaste' PartialQuantity buffer
-                        plantProductData.ToWaste += tmpUnsortedQuantity.AsPartial.ScaledBy(Prototype.ConversionLoss);
-
-                        //8. Round ToWaste PartialQuantity down to nearest whole number
-                        Quantity wasteQuantity = plantProductData.ToWaste.IntegerPart.Min(plantProductData.SortedQuantity);
-                        if (wasteQuantity.IsPositive)
-                        {
-                            //9. Destroy Waste
-                            Context.ProductsManager.ProductDestroyed(plantProductData.Product, wasteQuantity, DestroyReason.Wasted);
-
-                            //10. Remove Waste from SortedQuantity
-                            plantProductData.SortedQuantity -= wasteQuantity;
-
-                            //11. Remove ConversionLoss from 'ToWaste' should be between 0.00 and 0.99
-                            plantProductData.ToWaste -= wasteQuantity.AsPartial;
-                        }
-                    }
-                }
-            }
-            return quantitySortedRunningTotal.IsPositive;
         }
 
         /// <summary>
@@ -1554,9 +1624,17 @@ namespace TerrainTower.TTower
             //Not enough layers to mine
             if (ContextTerrainManager.GetLayersCountNoBedrock(tileAndIndex.Index) < (firstLayer ? 1 : 2))
             {
+                if (firstLayer)
+                {
+                    foreach (TerrainMaterialThicknessSlim x in ContextTerrainManager.EnumerateLayers(tileAndIndex.Index))
+                    {
+                        Logger.InfoDebug("DEBUG: {0} - {1} - {2} - {3}", x.SlimId, x.Thickness, x.RawData, x.ToStringSafe());
+                    }
+                    //Logger.Warning("tryMineDesignation_MineLayer: Not enough layers to mine: FirstLayer? {0}: LayersCount {1}: Index {2}", firstLayer, ContextTerrainManager.GetLayersCountNoBedrock(tileAndIndex.Index), tileAndIndex.Index);
+                }
                 return false;
             }
-
+            Logger.Info("VALID: {0}", tileAndIndex.ToStringSafe());
             TerrainMaterialThickness terrainLayer = firstLayer
                 ? ContextTerrainManager.GetFirstLayer(tileAndIndex.Index)
                 : ContextTerrainManager.GetSecondLayer(tileAndIndex.Index);
@@ -1610,66 +1688,11 @@ namespace TerrainTower.TTower
 
             return true;
         }
-
-        private void updateFullOutputNotifications()
-        {
-            //Blocked Output notification - even when not working
-            bool shouldNotify = false;
-            if (IsEnabled && m_sortedBufferIsPositive)
-            {
-                foreach (TerrainTowerProductData productData in m_productsData.Values)
-                {
-                    if (productData.NotifyIfFullOutput && productData.Buffer.IsFull)
-                    {
-                        shouldNotify = true;
-                        break;
-                    }
-                }
-            }
-            m_outputBlockedNotif.NotifyIff(shouldNotify, this);
-        }
-
-        private void updateMixedBufferNotifications()
-        {
-            // BUGFIX: Disable, allow user to set alerts via output full flags.
-            //m_inputBlockedNotif.NotifyIff(IsEnabled && MixedTotal >= (Capacity - MAX_MINE_QUANTITY), this);
-        }
-
-        /// <summary>
-        /// Update the Mixed Quantity from all <see cref="m_productsData"/>
-        /// </summary>
-        private void updateMixedQuantity()
-        {
-            Quantity val = Quantity.Zero;
-            foreach (TerrainTowerProductData productData in m_productsData.Values)
-            {
-                val += productData.UnsortedQuantity;
-            }
-            MixedTotal = val;
-            updateMixedBufferNotifications();
-        }
-
-        /// <summary>
-        /// Activate/Deactivate Notifications. Trigged on Add/Remove/Fulfilled <see cref="ManagedDesignations"/>
-        /// </summary>
-        private void updateTerrainNotifications()
-        {
-            //Set unfulfilled flags
-            HasUnfulfilledMining = m_managedDesignations.Any(desig => desig.IsMiningNotFulfilled);
-            HasUnfulfilledDumping = m_managedDesignations.Any(desig => desig.IsDumpingNotFulfilled);
-
-            //Update Notifications, if Flag is Set && has NotFulfilled Designations
-            m_missingMiningDesignationNotif.NotifyIff(TerrainConfigState.HasFlag(TerrainTowerConfigState.Mining)
-                && !HasUnfulfilledMining, this);
-            m_missingDumpingDesignationNotif.NotifyIff(TerrainConfigState.HasFlag(TerrainTowerConfigState.Dumping)
-                && !HasUnfulfilledDumping, this);
-
-            //If Dumping, must have > 0 Quantity. Alternative option: must have at least MAX_DUMP_QUANTITY in a buffer
-            //TODO: Remove? - It's set within dumpDesignation which has far more validation/checks, just in case the tower is set to Flatten, but we don't actually have any Dump Designations.
-            //m_missingDumpItemNotif.NotifyIff(TerrainConfigState.HasFlag(TerrainTowerConfigState.Dumping) && DumpTotal.IsZero, this);
-        }
     }
 
+    /// <summary>
+    /// Enums and Flags for Terrain Tower
+    /// </summary>
     public sealed partial class TerrainTowerEntity
     {
         public enum State
