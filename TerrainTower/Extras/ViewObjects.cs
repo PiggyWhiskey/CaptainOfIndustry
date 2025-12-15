@@ -1,4 +1,5 @@
-﻿using Mafi;
+﻿#if false
+using Mafi;
 using Mafi.Core;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Input;
@@ -109,7 +110,7 @@ namespace TerrainTower.Extras
 
             //Port IDs to output to, with '-' as a default option to disable output
             List<string> options = new List<string> { "-" };
-            for (int index = 0; index < TerrainTowerEntity.MAX_OUTPUTS; ++index)
+            for (int index = 0; index < TerrainTowerProto.MAX_OUTPUTS; ++index)
             {
                 char ch = (char)(65 + index);
                 options.Add(ch.ToString());
@@ -318,3 +319,4 @@ namespace TerrainTower.Extras
         }
     }
 }
+#endif

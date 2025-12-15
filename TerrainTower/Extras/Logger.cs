@@ -23,10 +23,6 @@ namespace TerrainTower.Extras
 
         public static void Info(object message) => log(message, Log.Info);
 
-        public static void InfoDebug(string message, params object[] values) => InfoDebug((object)string.Format(message, values));
-
-        public static void InfoDebug(object message) => log(message, Log.InfoDebug);
-
         public static void Warning(string message, params object[] values) => Warning((object)string.Format(message, values));
 
         public static void Warning(object message) => log(message, Log.Warning);

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <Configurations>Debug;Release</Configurations>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
@@ -31,12 +31,20 @@
     <OutputPath>bin\Release\$(MSBuildProjectName)</OutputPath>
     <IsPublishable>True</IsPublishable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="TTower\TEST_Examples\**" />
+    <EmbeddedResource Remove="TTower\TEST_Examples\**" />
+    <None Remove="TTower\TEST_Examples\**" />
+  </ItemGroup>
   
   
   <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>..\packages\Lib.Harmony.2.3.0\lib\net472\0Harmony.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Mafi.ModsAuthoringSupport">
+      <HintPath>D:\GameLibrary\SteamLibrary\steamapps\common\Captain of Industry\Captain of Industry_Data\Managed\Mafi.ModsAuthoringSupport.dll</HintPath>
+    </Reference>
+    <Reference Include="Mafi.UnityCore">
+      <HintPath>D:\GameLibrary\SteamLibrary\steamapps\common\Captain of Industry\Captain of Industry_Data\Managed\Mafi.UnityCore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="Mafi">
@@ -126,12 +134,18 @@
   </ItemGroup>
   
   
+  <ItemGroup>
+    <Folder Include="Model\" />
+    <Folder Include="TTower\TEST_Examples\" />
+  </ItemGroup>
+  
+  
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="echo 'Copy DLL to [C:\Users\Nathan Brom\AppData\Roaming\Captain of Industry\Mods\TerrainTower\TerrainTower.dll]'" />
     <Exec Command="powershell Copy-Item -Path '$(OutDir)TerrainTower.dll' -Destination 'C:\Users\Nathan Brom\AppData\Roaming\Captain of Industry\Mods\TerrainTower\TerrainTower.dll' -Force" />
   </Target>
   <Target Name="PostBuildRelease" AfterTargets="PostBuild" Condition="'$(Configuration)'=='Release'">
-    <Exec Command ="echo 'Build ZIP to [$(ProjectDir)\$(MSBuildProjectName).zip]'"/>
-    <Exec Command ="powershell Compress-Archive -Path '$(OutDir)' -DestinationPath '$(ProjectDir)\$(MSBuildProjectName).zip' -Force"/>
+    <Exec Command="echo 'Build ZIP to [$(ProjectDir)\$(MSBuildProjectName).zip]'" />
+    <Exec Command="powershell Compress-Archive -Path '$(OutDir)' -DestinationPath '$(ProjectDir)\$(MSBuildProjectName).zip' -Force" />
   </Target>
 </Project>

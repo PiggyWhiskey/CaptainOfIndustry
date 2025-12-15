@@ -1,5 +1,4 @@
 ﻿using Mafi;
-using Mafi.Base;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Prototypes;
 
@@ -86,6 +85,8 @@ namespace TerrainTower.TTower
 
             public MineArea(RelTile2i origin, RelTile2i initialSize, RelTile1i maxAreaEdgeSize)
             {
+                Assert.That(initialSize.X).IsPositive();
+                Assert.That(initialSize.Y).IsPositive();
                 Origin = origin;
                 InitialSize = initialSize;
                 MaxAreaEdgeSize = maxAreaEdgeSize;

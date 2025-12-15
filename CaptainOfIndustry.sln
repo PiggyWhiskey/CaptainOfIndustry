@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34714.143
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MassiveStorage", "COI_MassiveStorage\MassiveStorage.csproj", "{F44181A7-6A5E-4E6E-85FD-D2E4291A26B4}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2299B737-41E1-4AC3-841A-900436EC396B}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -14,7 +12,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TerrainTower", "TerrainTower\TerrainTower.csproj", "{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "COI_Questing", "COI_Questing\COI_Questing.csproj", "{010D196C-8F1C-4EB7-9899-D4125A402276}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "..\COI_ExampleMod\ExampleMod.Unity\Assembly-CSharp.csproj", "{51AFEED6-E9DC-F4E6-9C05-507909C7D54E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "..\COI_ExampleMod\ExampleMod.Unity\Assembly-CSharp-Editor.csproj", "{6CA5D4AB-54C2-40B3-6EEE-D694DCCF42CB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,18 +22,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F44181A7-6A5E-4E6E-85FD-D2E4291A26B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F44181A7-6A5E-4E6E-85FD-D2E4291A26B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F44181A7-6A5E-4E6E-85FD-D2E4291A26B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F44181A7-6A5E-4E6E-85FD-D2E4291A26B4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A6D5F6FC-B88E-4AF7-AE5A-52493FBE0659}.Release|Any CPU.Build.0 = Release|Any CPU
-		{010D196C-8F1C-4EB7-9899-D4125A402276}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{010D196C-8F1C-4EB7-9899-D4125A402276}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{010D196C-8F1C-4EB7-9899-D4125A402276}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{010D196C-8F1C-4EB7-9899-D4125A402276}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51AFEED6-E9DC-F4E6-9C05-507909C7D54E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51AFEED6-E9DC-F4E6-9C05-507909C7D54E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51AFEED6-E9DC-F4E6-9C05-507909C7D54E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51AFEED6-E9DC-F4E6-9C05-507909C7D54E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CA5D4AB-54C2-40B3-6EEE-D694DCCF42CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CA5D4AB-54C2-40B3-6EEE-D694DCCF42CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CA5D4AB-54C2-40B3-6EEE-D694DCCF42CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CA5D4AB-54C2-40B3-6EEE-D694DCCF42CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -6,10 +6,55 @@ using Mafi.Core.Notifications;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Research;
 
+using TerrainTower.Extras;
 using TerrainTower.TTower;
 
 namespace TerrainTower
 {
+    internal class NotificationRegistrator : IModData
+    {
+        public void RegisterData(ProtoRegistrator registrator)
+        {
+            NotificationProtoBuilder notificationProtoBuilder = registrator.NotificationProtoBuilder;
+
+            //Using vanilla AddIcon assets because I don't know how to design custom Entity Icons
+            //AddEntityIcon are shown over affected entities.
+            //Should have AddIcon - TerrainTowerIcon (or something like that) and AddEntityIcon showing the specific issue with the specific entity (Blocked/Designation etc)
+            //If using {entity} in the message, EntityIcon is required.
+            _ = notificationProtoBuilder
+                .Start("{entity}: has no remaining mining designations", CustomIds.Notifications.TerrainTowerMissingDesignation)
+                .SetType(NotificationType.Continuous)
+                .SetStyle(NotificationStyle.Warning)
+                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .AddIcon("Assets/Unity/UserInterface/EntityIcons/Designation.png")
+                .BuildAndAdd();
+
+            _ = notificationProtoBuilder
+                .Start("{entity}: No available products to dump", CustomIds.Notifications.TerrainTowerMissingDumpItem)
+                .SetType(NotificationType.Continuous)
+                .SetStyle(NotificationStyle.Warning)
+                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .AddIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .BuildAndAdd();
+
+            _ = notificationProtoBuilder
+                .Start("{entity}: blocked due to full output", CustomIds.Notifications.TerrainTowerBlockedOuput)
+                .SetType(NotificationType.Continuous)
+                .SetStyle(NotificationStyle.Warning)
+                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .AddIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .BuildAndAdd();
+
+            _ = notificationProtoBuilder
+                .Start("{entity}: blocked due to full mixed buffer", CustomIds.Notifications.TerrainTowerFullMixedBuffer)
+                .SetType(NotificationType.Continuous)
+                .SetStyle(NotificationStyle.Warning)
+                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .AddIcon("Assets/Unity/UserInterface/General/Blocked.svg")
+                .BuildAndAdd();
+        }
+    }
+
     internal class PrototypeRegistrator : IModData
     {
         private LayoutEntityProto.Gfx m_entityGraphics;
@@ -21,10 +66,10 @@ namespace TerrainTower
                 prefabPath: TerrainTowerProto.PREFAB_PATH,
                 customIconPath: TerrainTowerProto.CUSTOM_ICON_PATH,
                 categories: registrator.GetCategoriesProtos(Ids.ToolbarCategories.Buildings));
-            m_protoString = Proto.CreateStr(Extras.CustomIds.Prototypes.TerrainTowerProtoId, "Terrain Tower", "Tower to control Mining and Dumping");
+            m_protoString = Proto.CreateStr(CustomIds.Prototypes.TerrainTowerProtoId, "Terrain Tower", "Tower to control Mining and Dumping");
 
             TerrainTowerProto protoObject = new TerrainTowerProto(
-                id: Extras.CustomIds.Prototypes.TerrainTowerProtoId,
+                id: CustomIds.Prototypes.TerrainTowerProtoId,
                 strings: m_protoString,
                 layout: registrator.LayoutParser.ParseLayoutOrThrow(TerrainTowerProto.LAYOUT),
                 costs: TerrainTowerProto.ENTITY_COSTS.MapToEntityCosts(registrator),
@@ -48,63 +93,12 @@ namespace TerrainTower
         public void RegisterData(ProtoRegistrator registrator)
         {
             _ = registrator.ResearchNodeProtoBuilder
-                .Start("Terrain Tower", Extras.CustomIds.Research.TerrainTowerResearchId)
+                .Start(name: "Terrain Tower",
+                       nodeId: CustomIds.Research.TerrainTowerResearchId,
+                       costMonths: TerrainTowerProto.RESEARCH_DIFFICULTY)
                 .Description("Terrain Tower Research")
-                .AddLayoutEntityToUnlock(Extras.CustomIds.Prototypes.TerrainTowerProtoId)
+                .AddLayoutEntityToUnlock(CustomIds.Prototypes.TerrainTowerProtoId)
                 .SetGridPosition(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.IronSmeltingScrap).GridPosition + new Vector2i(0, -4))
-                .SetCosts(new ResearchCostsTpl(TerrainTowerProto.RESEARCH_DIFFICULTY))
-                .BuildAndAdd();
-        }
-    }
-
-    internal class NotificationRegistrator : IModData
-    {
-        public void RegisterData(ProtoRegistrator registrator)
-        {
-            NotificationProtoBuilder notificationProtoBuilder = registrator.NotificationProtoBuilder;
-
-            //Using vanilla AddIcon assets because I don't know how to design custom Entity Icons
-            //AddEntityIcon are shown over affected entities.
-            //Should have AddIcon - TerrainTowerIcon (or something like that) and AddEntityIcon showing the specific issue with the specific entity (Blocked/Designation etc)
-            //If using {entity} in the message, EntityIcon is required.
-            notificationProtoBuilder
-                .Start("{entity}: configured for mining with no remaining mining designations", Extras.CustomIds.Notifications.TerrainTowerMissingMineDesignation)
-                .SetType(NotificationType.Continuous)
-                .SetStyle(NotificationStyle.Warning)
-                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
-                .AddIcon("Assets/Unity/UserInterface/EntityIcons/Designation.png")
-                .BuildAndAdd();
-
-            notificationProtoBuilder
-                .Start("{entity}: configured for dumping with no remaining dumping designations", Extras.CustomIds.Notifications.TerrainTowerMissingDumpDesignation)
-                .SetType(NotificationType.Continuous)
-                .SetStyle(NotificationStyle.Warning)
-                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
-                .AddIcon("Assets/Unity/UserInterface/EntityIcons/Designation.png")
-                .BuildAndAdd();
-
-            notificationProtoBuilder
-                .Start("{entity}: No available products to dump", Extras.CustomIds.Notifications.TerrainTowerMissingDumpItem)
-                .SetType(NotificationType.Continuous)
-                .SetStyle(NotificationStyle.Warning)
-                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
-                .AddIcon("Assets/Unity/UserInterface/General/Blocked.svg")
-                .BuildAndAdd();
-
-            notificationProtoBuilder
-                .Start("{entity}: blocked due to full output", Extras.CustomIds.Notifications.TerrainTowerBlockedOuput)
-                .SetType(NotificationType.Continuous)
-                .SetStyle(NotificationStyle.Warning)
-                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
-                .AddIcon("Assets/Unity/UserInterface/General/Blocked.svg")
-                .BuildAndAdd();
-
-            notificationProtoBuilder
-                .Start("{entity}: blocked due to full mixed buffer", Extras.CustomIds.Notifications.TerrainTowerFullMixedBuffer)
-                .SetType(NotificationType.Continuous)
-                .SetStyle(NotificationStyle.Warning)
-                .AddEntityIcon("Assets/Unity/UserInterface/General/Blocked.svg")
-                .AddIcon("Assets/Unity/UserInterface/General/Blocked.svg")
                 .BuildAndAdd();
         }
     }
